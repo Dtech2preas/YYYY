@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>DTech - Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #020617;
+            --surface: #0f172a;
+            --surface-hover: #1e293b;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --accent: #d4af37;
+            --primary: #3b82f6;
+            --border: rgba(255, 255, 255, 0.1);
+            --radius: 12px;
+        }
+
+        body {
+            background: var(--bg);
+            color: var(--text-main);
+            font-family: 'Inter', sans-serif;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 500px;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 15px;
+            margin-bottom: 20px;
+        }
+
+        .balance-card {
+            background: linear-gradient(135deg, var(--surface), #1e293b);
+            padding: 30px;
+            border-radius: var(--radius);
+            text-align: center;
+            margin-bottom: 25px;
+            border: 1px solid var(--border);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.5);
+        }
+
+        .balance-label {
+            color: var(--text-muted);
+            text-transform: uppercase;
+            font-size: 0.85rem;
+            letter-spacing: 1px;
+            margin-bottom: 10px;
+        }
+
+        .balance-amount {
+            font-size: 3.5rem;
+            font-weight: 800;
+            color: var(--accent);
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        .btn-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 20px;
+            text-align: center;
+            text-decoration: none;
+            color: var(--text-main);
+            transition: all 0.2s;
+            cursor: pointer;
+        }
+
+        .btn-card:hover {
+            background: var(--surface-hover);
+            border-color: var(--accent);
+            transform: translateY(-3px);
+        }
+
+        .icon {
+            font-size: 2rem;
+            margin-bottom: 10px;
+            display: block;
+        }
+
+        .btn-card span.label {
+            font-weight: 600;
+            font-size: 1rem;
+        }
+
+        .logout {
+            color: #ef4444;
+            text-decoration: none;
+            font-size: 0.9rem;
+            cursor: pointer;
+        }
+
+        .admin-link {
+            text-align: center;
+            margin-top: 30px;
+        }
+        .admin-link a {
+            color: var(--text-muted);
+            text-decoration: underline;
+            font-size: 0.8rem;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <div class="header">
+            <div>
+                Hello, <strong style="color: var(--primary);" id="username-display">User</strong>
+            </div>
+            <a class="logout" onclick="logout()">Logout</a>
+        </div>
+
+        <div class="balance-card">
+            <div class="balance-label">Total Points</div>
+            <div class="balance-amount" id="points-display">0</div>
+        </div>
+
+        <div class="grid">
+            <a href="berserker.html" class="btn-card" style="grid-column: span 2; background: rgba(212, 175, 55, 0.1); border-color: rgba(212, 175, 55, 0.3);">
+                <span class="icon">⚔️</span>
+                <span class="label" style="color: var(--accent);">Berserker Mode (Watch Ads)</span>
+            </a>
+            <a href="profile.html" class="btn-card">
+                <span class="icon">👤</span>
+                <span class="label">Profile</span>
+            </a>
+            <a href="withdraw.html" class="btn-card">
+                <span class="icon">💸</span>
+                <span class="label">Withdraw</span>
+            </a>
+        </div>
+
+        <div class="admin-link">
+            <a href="admin.html">Admin Console</a>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = "https://crimson-art-f482.lefa4082.workers.dev";
+        const user = JSON.parse(localStorage.getItem('dtech_user'));
+
+        if (!user || !user.username) {
+            window.location.href = 'index.html';
+        }
+
+        document.getElementById('username-display').innerText = user.username;
+
+        async function fetchPoints() {
+            try {
+                const res = await fetch(`${API_URL}/user?username=${encodeURIComponent(user.username)}`);
+                const data = await res.json();
+
+                if (res.ok) {
+                    document.getElementById('points-display').innerText = data.points;
+                } else if (res.status === 403) {
+                    alert('Your account is banned.');
+                    logout();
+                }
+            } catch(e) {
+                console.error("Failed to fetch points", e);
+            }
+        }
+
+        function logout() {
+            localStorage.removeItem('dtech_user');
+            window.location.href = 'index.html';
+        }
+
+        fetchPoints();
+    </script>
+</body>
+</html>
