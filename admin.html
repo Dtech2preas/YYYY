@@ -3,1363 +3,197 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>DTech Admin Console — Mobile</title>
-
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
-
-    <meta name="theme-color" content="#0f172a">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-
+    <title>Admin - DTech</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
     <style>
         :root {
-            --primary: #0f172a;
-            --sidebar: #1e293b;
-            --accent: #d4af37;
-            --bg: #f1f5f9;
+            --bg: #f8fafc;
             --surface: #ffffff;
-            --text: #334155;
+            --text-main: #0f172a;
+            --text-muted: #64748b;
+            --primary: #3b82f6;
             --danger: #ef4444;
             --success: #10b981;
-            --radius: 12px;
-            --shadow: 0 6px 18px -6px rgba(0, 0, 0, 0.25);
+            --border: #e2e8f0;
+            --radius: 8px;
         }
-
-        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 
         body {
-            font-family: 'Inter', sans-serif;
             background: var(--bg);
-            color: var(--text);
+            color: var(--text-main);
+            font-family: 'Inter', sans-serif;
             margin: 0;
-            padding-bottom: 86px; /* bottom nav */
-            -webkit-font-smoothing:antialiased;
-            -moz-osx-font-smoothing:grayscale;
+            padding: 20px;
         }
 
-        /* Login Overlay (mobile-friendly) */
-        #login-overlay {
-            position: fixed; top:0; left:0; right:0; bottom:0;
-            background: rgba(15, 23, 42, 0.98);
-            display: flex; justify-content: center; align-items: center;
-            z-index: 2000;
-            color: white;
-        }
-        #login-overlay .card {
-            width: 92%;
-            max-width: 420px;
-            border-radius: var(--radius);
-            padding: 28px;
-            text-align: center;
-            border: 1px solid var(--accent);
-            box-shadow: 0 8px 30px rgba(2,6,23,0.6);
-        }
-        #admin-secret {
-            width: 100%;
-            padding: 12px;
-            border-radius: 8px;
-            border: 1px solid rgba(255,255,255,0.14);
-            background: rgba(255,255,255,0.03);
-            color: white;
-            margin-bottom: 12px;
-            font-size: 16px;
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
         }
 
-        /* Content area */
-        #content-area {
-            padding: 16px;
-            min-height: 100vh;
-        }
-
-        h1 { font-family: 'Cinzel', serif; margin: 0 0 14px 0; color: var(--accent); font-size: 20px; }
-        h2 { margin: 0 0 12px 0; color: var(--primary); font-size: 18px; }
-        h3 { margin: 0 0 8px 0; font-size: 16px; color: var(--primary); }
-
-        /* Nav bottom */
-        #bottom-nav {
-            position: fixed;
-            bottom: 8px;
-            left: 8px;
-            right: 8px;
-            background: linear-gradient(180deg, rgba(15,23,42,0.98), rgba(15,23,42,1));
+        .header {
             display: flex;
             justify-content: space-between;
-            gap: 6px;
-            padding: 8px;
-            border-radius: 14px;
-            box-shadow: 0 10px 30px rgba(2,6,23,0.35);
-            z-index: 1000;
             align-items: center;
+            margin-bottom: 20px;
         }
 
-        .bn-item {
-            flex: 1;
-            text-align: center;
-            color: #cbd5e1;
-            font-size: 12px;
-            cursor: pointer;
-            padding: 6px 6px;
-            border-radius: 8px;
-            user-select: none;
-        }
-        .bn-item .icon { display:block; font-size: 18px; line-height: 1; margin-bottom: 2px; }
-        .bn-item.active {
-            background: linear-gradient(180deg,var(--accent), #cfa43b);
-            color: var(--primary);
-            box-shadow: 0 6px 16px rgba(212,175,55,0.18);
-        }
-
-        /* Cards & Spacing */
         .card {
             background: var(--surface);
+            border: 1px solid var(--border);
             border-radius: var(--radius);
-            padding: 16px;
-            box-shadow: var(--shadow);
-            margin-bottom: 12px;
+            padding: 20px;
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+            overflow-x: auto;
         }
 
-        .grid-2 {
-            display: grid;
-            grid-template-columns: 1fr;
-            gap: 12px;
-        }
-        .grid-4 {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 12px;
-        }
-
-        /* Large stat tiles */
-        .stat {
-            text-align: center;
-            padding: 14px;
-            border-radius: 12px;
-            background: linear-gradient(180deg,#fff,#fbfbfb);
-        }
-        .stat .label { color:#64748b; font-size: 12px; }
-        .stat .value { font-weight: 700; font-size: 20px; margin-top: 6px; color: var(--primary); }
-
-        /* Buttons & Inputs */
-        input, select, textarea {
+        table {
             width: 100%;
+            border-collapse: collapse;
+        }
+
+        th, td {
+            text-align: left;
             padding: 12px;
-            border: 1px solid #e6eef6;
-            border-radius: 10px;
-            box-sizing: border-box;
-            margin-bottom: 10px;
-            font-family: inherit;
-            font-size: 15px;
+            border-bottom: 1px solid var(--border);
         }
-        button {
-            background: var(--primary);
-            color: white;
-            padding: 12px 14px;
+
+        th {
+            color: var(--text-muted);
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 0.85rem;
+        }
+
+        .action-btn {
+            padding: 6px 12px;
             border: none;
-            border-radius: 10px;
+            border-radius: 4px;
             cursor: pointer;
-            font-weight: 700;
-            font-size: 15px;
-        }
-        button.accent { background: var(--accent); color: var(--primary); }
-        button.danger { background: var(--danger); }
-        button.success { background: var(--success); }
-        button.icon-btn {
-            display:inline-flex; align-items:center; gap:8px; padding:10px 12px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            margin-right: 5px;
         }
 
-        /* Table mobile */
-        table { width: 100%; border-collapse: collapse; font-size: 0.9rem; display:block; overflow:auto; white-space:nowrap; }
-        th { text-align: left; padding: 10px; border-bottom: 2px solid #eaeef3; color: #64748b; font-size: 11px; text-transform: uppercase; }
-        td { padding: 10px; border-bottom: 1px solid #f3f6fb; font-size: 14px; }
+        .btn-edit { background: #e0f2fe; color: #0284c7; }
+        .btn-ban { background: #fef3c7; color: #d97706; }
+        .btn-unban { background: #dcfce7; color: #15803d; }
+        .btn-delete { background: #fee2e2; color: #b91c1c; }
 
-        /* Badges */
-        .badge { font-size: 0.75rem; padding: 4px 8px; border-radius: 12px; font-weight: 700; display:inline-block; }
-        .bg-yellow { background: #fef9c3; color: #854d0e; }
-        .bg-green { background: #dcfce7; color: #166534; }
-        .bg-red { background: #fee2e2; color: #dc2626; }
-
-        /* Ad config simplified */
-        .ad-group { border: 1px solid #f1f5f9; padding: 12px; border-radius: 10px; margin-bottom: 10px; }
-        .ad-title { font-weight: 700; margin-bottom: 6px; font-size: 13px; color: var(--primary); }
-
-        /* Views */
-        .view-section { display: none; }
-        .view-section.active { display: block; }
-
-        /* Certificate big upload */
-        .cert-drop {
-            border: 2px dashed #e6eef6;
-            padding: 18px;
-            border-radius: 12px;
-            cursor: pointer;
-            background: linear-gradient(180deg,#fff,#fcfdff);
+        .banned-row {
+            opacity: 0.6;
+            background: #f8fafc;
         }
 
-        /* Sub-tabs */
-        .sub-tab {
-            background: #e2e8f0; color: #64748b; padding: 8px 16px; border-radius: 20px; font-size: 13px; border:none; white-space:nowrap;
-        }
-        .sub-tab.active {
-            background: var(--primary); color: white;
-        }
-
-        /* Responsive tuning */
-        @media (min-width: 720px) {
-            .grid-4 { grid-template-columns: repeat(4, 1fr); }
-            #content-area { padding: 24px; max-width: 1100px; margin: 0 auto; }
-            #bottom-nav { left: 20%; right: 20%; bottom: 18px; border-radius: 18px; }
+        .back-link {
+            color: var(--primary);
+            text-decoration: none;
+            font-weight: 600;
         }
     </style>
 </head>
 <body>
 
-<!-- LOGIN -->
-<div id="login-overlay">
-    <div class="card">
-        <h2 style="color:white; margin-bottom: 14px;">SYSTEM ACCESS</h2>
-        <input type="password" id="admin-secret" placeholder="Secret Key" />
-        <button onclick="auth()" class="accent" style="width:100%;">UNLOCK</button>
-    </div>
-</div>
-
-<!-- CONTENT -->
-<div id="content-area">
-
-    <!-- DASHBOARD -->
-    <div id="view-dashboard" class="view-section active">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-            <div>
-                <h1>DTECH ADMIN</h1>
-                <div style="font-size:13px; color:#64748b;">Mobile Console</div>
-            </div>
-            <div style="text-align:right;">
-                <div style="font-size:12px; color:#94a3b8;">Signed in as</div>
-                <div style="font-weight:700; color:var(--primary);">Admin</div>
-            </div>
+    <div class="container">
+        <div class="header">
+            <h2>Admin Console</h2>
+            <a href="dashboard.html" class="back-link">Back to App</a>
         </div>
 
-        <div class="grid-4" style="margin-bottom:12px;">
-            <div class="card stat">
-                <div class="label">TOTAL USERS</div>
-                <div id="s-users" class="value">0</div>
-            </div>
-            <div class="card stat">
-                <div class="label">ACTIVE TODAY</div>
-                <div id="s-active" class="value" style="color:var(--success);">0</div>
-            </div>
-            <div class="card stat">
-                <div class="label">REWARDS TODAY</div>
-                <div id="s-rewards" class="value" style="color:var(--accent);">R 0.00</div>
-            </div>
-            <div class="card stat">
-                <div class="label">LIABILITY</div>
-                <div id="s-liability" class="value" style="color:var(--danger);">R 0.00</div>
-            </div>
-        </div>
-
-        <div class="card" style="display: none;">
-            <div style="display:flex; justify-content:space-between; align-items:center;">
-                <h3>Pending Approvals <span id="pending-badge" class="badge bg-yellow" style="margin-left:8px;">0</span></h3>
-                <button class="success" style="padding:6px 12px; font-size:12px;" onclick="approveAllPending()">Approve All</button>
-            </div>
-            <div id="pending-list" style="max-height:260px; overflow:auto; margin-top:10px;"></div>
-        </div>
-
-        <!-- NEW: PENDING REWARDS -->
-        <div class="card" style="margin-top:12px; display: none;">
-            <div style="display:flex; justify-content:space-between; align-items:center;">
-                <h3>Pending Postback Rewards</h3>
-                <span id="pending-rewards-badge" class="badge bg-green">0</span>
-            </div>
-            <div id="pending-rewards-list" style="max-height:260px; overflow:auto; margin-top:10px;"></div>
-        </div>
-
-        <div class="card" style="margin-top:12px;">
-            <div style="display:flex; justify-content:space-between; align-items:center;">
-                <h3>Red Zone (Suspicious / R3)</h3>
-                <button class="danger" style="padding:6px 12px; font-size:12px;" onclick="freezeRedZone()">Freeze All</button>
-            </div>
-            <div id="red-zone-list" style="max-height:220px; overflow:auto; margin-top:8px; font-size:14px;"></div>
-        </div>
-    </div>
-
-    <!-- USERS -->
-    <div id="view-users" class="view-section">
-        <h2>User Management</h2>
         <div class="card">
-            <div style="display:flex; gap:10px;">
-                <input id="u-search" placeholder="Enter Username to Search" />
-                <button onclick="lookupUser()">Search</button>
-            </div>
-
-            <div id="u-details" style="display:none; margin-top:16px; border-top:1px solid #eef5fb; padding-top:14px;">
-                <div style="display:flex; justify-content:space-between; align-items:center;">
-                    <h3 id="u-name" style="margin:0;">User</h3>
-                    <div id="u-status" style="font-size:13px; color:#64748b;"></div>
-                </div>
-
-                <div class="grid-4" style="margin-top:14px;">
-                    <div>
-                        <strong>Balance:</strong> <div id="u-bal" style="font-size:16px; color:var(--accent); font-weight:700;">R 0.00</div>
-                        <div style="margin-top:8px;"><strong>Pending:</strong> <span id="u-pend">R 0.00</span></div>
-                        <div style="margin-top:6px;"><strong>Referral:</strong> <span id="u-ref">R 0.00</span></div>
-                        <div style="font-size:12px; color:#64748b; margin-top:4px;">Ref by: <span id="u-ref-by">None</span> | Count: <span id="u-ref-cnt">0</span></div>
-                    </div>
-                    <div style="text-align:right;">
-                        <button class="danger" onclick="actUser('freeze')" id="btn-freeze" style="margin-bottom:8px; width:100%;">Freeze</button>
-                        <button onclick="actUser('shadowban')" id="btn-shadow" style="margin-bottom:8px; width:100%;">Shadowban</button>
-                        <button onclick="openEditUser()" style="width:100%; background:#e2e8f0; color:#334155;">Edit Profile</button>
-                    </div>
-                </div>
-
-                <div style="margin-top:14px;">
-                    <h4 style="margin-bottom:8px;">Recent Daily Stats (Pending / Approved)</h4>
-                    <div id="u-daily-stats" style="font-size:13px; background:#fbfcff; padding:10px; border-radius:8px;"></div>
-                </div>
-
-                <!-- PENDING REWARDS FOR USER -->
-                <div id="u-pending-rewards-container" style="display:none; margin-top:14px;">
-                    <h4 style="margin-bottom:8px;">Pending Postback Rewards</h4>
-                    <div id="u-pending-rewards-list" style="font-size:13px; background:#fbfcff; padding:10px; border-radius:8px;"></div>
-                </div>
-
-                <div style="margin-top:12px;">
-                    <button onclick="adjustBal()" style="background:#e6eef6; color:#0f172a; font-weight:700; width:100%; margin-bottom:8px;">Adjust Balance Manually</button>
-
-                    <div style="display:flex; gap:8px;">
-                        <input id="u-msg-input" placeholder="Personal Message" style="margin-bottom:0;">
-                        <button onclick="sendUserMsg()">Send</button>
-                    </div>
-                </div>
-            </div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Username</th>
+                        <th>Points</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="users-list">
+                    <tr><td colspan="4">Loading users...</td></tr>
+                </tbody>
+            </table>
         </div>
     </div>
 
-    <!-- AD SETS -->
-    <div id="view-adsets" class="view-section">
-        <h2>Ad Configurations</h2>
-        <div class="card" style="display:flex; gap:10px; align-items:center; justify-content:space-between;">
-            <div>
-                <button class="accent" onclick="toggleAdForm()">+ Create New Ad Set</button>
-                <div style="margin-top:8px; font-size:13px; color:#64748b;">Unassigned Sets: <strong id="sets-avail">0</strong></div>
-            </div>
-            <div style="font-size:12px; color:#94a3b8;">Tip: Use zone IDs for quick recon</div>
-        </div>
-
-        <div id="adset-form" class="card" style="display:none; border:2px solid rgba(212,175,55,0.18);">
-            <h3>New Ad Set</h3>
-            <div class="ad-group">
-                <div class="ad-title">1. Popunder</div>
-                <input class="ad-in" data-type="popunder" name="id" placeholder="Zone ID (Required for Recon)">
-                <input class="ad-in" data-type="popunder" name="tag" placeholder="Script Tag">
-            </div>
-
-            <div class="ad-group">
-                <div class="ad-title">2. In-Page Push</div>
-                <input class="ad-in" data-type="inpage" name="id" placeholder="Zone ID (Required for Recon)">
-                <input class="ad-in" data-type="inpage" name="tag" placeholder="Script Tag">
-            </div>
-
-            <div class="ad-group">
-                <div class="ad-title">3. Direct Link</div>
-                <input class="ad-in" data-type="direct" name="link" placeholder="Direct URL">
-                <input class="ad-in" data-type="direct" name="id" placeholder="Zone ID (Extract or manual)">
-            </div>
-
-            <div class="ad-group">
-                <div class="ad-title">4. Push Notification</div>
-                <input class="ad-in" data-type="push" name="id" placeholder="Zone ID (Required for Recon)">
-                <input class="ad-in" data-type="push" name="tag" placeholder="Script Tag">
-            </div>
-
-            <div style="display:flex; gap:8px; margin-top:8px;">
-                <button class="success" onclick="createAdSet()">Save Configuration</button>
-                <button onclick="toggleAdForm()" style="background:#f3f4f6; color:#0f172a;">Cancel</button>
-            </div>
-        </div>
-
-        <div class="card" style="margin-top:12px;">
-            <h3>Ad Set Inventory</h3>
-            <div style="max-height:400px; overflow:auto;">
-                <table style="width:100%;">
-                    <thead>
-                        <tr>
-                            <th>Set ID</th>
-                            <th>Pop / InPage IDs</th>
-                            <th>Assigned To</th>
-                            <th>Action</th>
-                        </tr>
-                    </thead>
-                    <tbody id="adset-list">
-                        <!-- Populated via JS -->
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    </div>
-
-    <!-- RECONCILIATION -->
-    <div id="view-reconcile" class="view-section">
-        <h2>Reconciliation Engine</h2>
-        <div class="card">
-            <div style="display:grid; gap:10px;">
-                <div>
-                    <label><strong>1. Select Date</strong></label>
-                    <input type="date" id="recon-date">
-                </div>
-                <div>
-                    <label><strong>2. Upload Monetag CSV</strong></label>
-                    <input type="file" id="csv-file" accept=".csv">
-                </div>
-                <div style="display:flex; gap:8px;">
-                    <button class="accent" onclick="processRecon()">Analyze & Calculate</button>
-                    <button onclick="document.getElementById('csv-file').click()" style="background:#eef2ff; color:#0f172a;">Choose File</button>
-                </div>
-            </div>
-        </div>
-
-        <div id="recon-preview" class="card" style="display:none;">
-            <h3>Reconciliation Preview</h3>
-            <div style="overflow:auto;">
-                <table style="margin-bottom:12px;">
-                    <thead>
-                        <tr>
-                            <th>User</th>
-                            <th>Game Pending</th>
-                            <th>Real (CSV)</th>
-                            <th>Approved (Calc)</th>
-                            <th>Breakdown</th>
-                        </tr>
-                    </thead>
-                    <tbody id="recon-body"></tbody>
-                </table>
-            </div>
-
-            <div style="text-align:center;">
-                <button class="success" onclick="confirmRecon()" style="padding:12px 18px;">CONFIRM & PROCESS PAYOUTS</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- CERTIFICATES -->
-    <div id="view-certs" class="view-section">
-        <h2>Certificate Scanner</h2>
-        <div class="card" style="text-align:center;">
-            <div class="cert-drop" onclick="document.getElementById('cert-upload').click()">
-                <div style="font-size:2.6rem;">📸</div>
-                <h3>Upload Certificate Image</h3>
-                <div style="font-size:13px; color:#64748b;">Tap to choose or take a picture</div>
-                <input type="file" id="cert-upload" accept="image/*" style="display:none;" onchange="handleCertFile(this.files)">
-            </div>
-
-            <div style="margin-top:14px;">
-                <input id="cert-manual-id" placeholder="Or enter CERT-ID manually" style="width:72%; display:inline-block; vertical-align:middle;">
-                <button onclick="verifyCertManual()" style="width:26%; display:inline-block; vertical-align:middle; margin-left:6px;">Check</button>
-            </div>
-        </div>
-
-        <div id="cert-result" class="card" style="display:none; border:2px solid rgba(212,175,55,0.18);"></div>
-    </div>
-
-    <!-- SYSTEM -->
-    <div id="view-system" class="view-section">
-        <h2>System Administration</h2>
-
-        <div style="display:flex; gap:8px; margin-bottom:16px; overflow-x:auto; padding-bottom:4px;">
-            <button class="sub-tab active" onclick="switchSysTab('status', this)">Status</button>
-            <button class="sub-tab" onclick="switchSysTab('config', this)">Config</button>
-            <button class="sub-tab" onclick="switchSysTab('analytics', this)">Analytics</button>
-            <button class="sub-tab" onclick="switchSysTab('logs', this)">Logs</button>
-        </div>
-
-        <!-- STATUS -->
-        <div id="sys-tab-status" class="sys-section">
-            <div class="grid-4">
-                <div class="card">
-                    <h3>Rewards</h3>
-                    <button id="btn-sys-rewards" onclick="toggleSys('toggle_freeze_rewards')">ACTIVE</button>
-                </div>
-                <div class="card">
-                    <h3>Emergency Cut</h3>
-                    <button id="btn-sys-cut" onclick="toggleSys('toggle_emergency_cut')">OFF</button>
-                </div>
-                <div class="card">
-                    <h3>Withdrawals</h3>
-                    <button id="btn-sys-withdraw" onclick="toggleSys('toggle_withdrawals')">ENABLED</button>
-                </div>
-                <div class="card">
-                    <h3>Ad System</h3>
-                    <button id="btn-sys-ads" onclick="toggleSys('toggle_ads')">RUNNING</button>
-                </div>
-            </div>
-
-            <div class="card" style="margin-top:12px;">
-                <h3>Message of the Day</h3>
-                <textarea id="sys-motd" rows="3" placeholder="Enter announcement text to display on dashboard..." style="width:100%; border:1px solid #e6eef6; border-radius:10px; padding:12px; margin-bottom:10px; font-family:inherit;"></textarea>
-                <div style="display:flex; gap:8px;">
-                     <button class="accent" onclick="saveMotd()">Update Banner</button>
-                     <button onclick="clearMotd()" style="background:#f3f4f6; color:#0f172a;">Clear / Remove</button>
-                </div>
-            </div>
-        </div>
-
-        <!-- CONFIG -->
-        <div id="sys-tab-config" class="sys-section" style="display:none;">
-            <div class="card">
-                <h3>Global Limits</h3>
-                <label>Monthly Budget (R)</label>
-                <input id="cfg-budget" type="number" step="10">
-                <div class="grid-2">
-                    <div><label>Min Withdraw</label><input id="cfg-min-w" type="number"></div>
-                    <div><label>Max Withdraw</label><input id="cfg-max-w" type="number"></div>
-                </div>
-            </div>
-
-            <div class="card">
-                <h3>Reward Ranges</h3>
-                <div class="grid-2">
-                    <div><label>R1 Min</label><input id="cfg-r1-min" type="number" step="0.01"></div>
-                    <div><label>R1 Max</label><input id="cfg-r1-max" type="number" step="0.01"></div>
-                </div>
-                <div class="grid-2">
-                    <div><label>R2 Low Min</label><input id="cfg-r2-l-min" type="number" step="0.01"></div>
-                    <div><label>R2 Low Max</label><input id="cfg-r2-l-max" type="number" step="0.01"></div>
-                </div>
-                 <div class="grid-2">
-                    <div><label>R2 High Min</label><input id="cfg-r2-h-min" type="number" step="0.01"></div>
-                    <div><label>R2 High Max</label><input id="cfg-r2-h-max" type="number" step="0.01"></div>
-                </div>
-                <div class="grid-2">
-                    <div><label>R3 Min</label><input id="cfg-r3-min" type="number" step="0.001"></div>
-                    <div><label>R3 Max</label><input id="cfg-r3-max" type="number" step="0.001"></div>
-                </div>
-            </div>
-
-            <div class="card">
-                <h3>Mission Targets</h3>
-                <div class="grid-4">
-                    <div><label>Popunder</label><input id="cfg-mis-pop" type="number"></div>
-                    <div><label>In-Page</label><input id="cfg-mis-inp" type="number"></div>
-                    <div><label>Direct</label><input id="cfg-mis-dir" type="number"></div>
-                </div>
-            </div>
-
-            <div class="card">
-                <h3>Cooldowns (ms)</h3>
-                <div class="grid-2">
-                    <div><label>Round 1 (3600000 = 60m)</label><input id="cfg-cool-r1" type="number"></div>
-                    <div><label>Round 2 (1200000 = 20m)</label><input id="cfg-cool-r2" type="number"></div>
-                </div>
-            </div>
-
-            <div style="margin-top:10px;">
-                <button class="success" onclick="saveSystemConfig()" style="width:100%;">SAVE CONFIGURATION</button>
-            </div>
-        </div>
-
-        <!-- ANALYTICS -->
-        <div id="sys-tab-analytics" class="sys-section" style="display:none;">
-            <div class="card">
-                <h3>30-Day Activity</h3>
-                <div id="analytics-chart" style="height:200px; display:flex; align-items:flex-end; gap:4px; padding-top:20px; overflow-x:auto;">
-                    <!-- Bars injected here -->
-                </div>
-            </div>
-        </div>
-
-        <!-- LOGS -->
-        <div id="sys-tab-logs" class="sys-section" style="display:none;">
-            <div class="card">
-                <h3>System Logs</h3>
-                <div id="sys-logs-list" style="font-family:monospace; font-size:12px; max-height:400px; overflow:auto;"></div>
-            </div>
-        </div>
-
-    </div>
-
-</div>
-
-<!-- EDIT USER MODAL -->
-<div id="edit-user-overlay" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.8); z-index:2000; align-items:center; justify-content:center;">
-    <div class="card" style="width:90%; max-width:400px;">
-        <h3>Edit User Profile</h3>
-        <label>New Email</label><input id="edit-email">
-        <label>New WhatsApp</label><input id="edit-whatsapp">
-        <label>New Password (Leave blank to keep)</label><input id="edit-password">
-        <div style="display:flex; gap:10px; margin-top:10px;">
-            <button class="success" onclick="saveUserEdit()">Save Changes</button>
-            <button onclick="document.getElementById('edit-user-overlay').style.display='none'" style="background:#f1f5f9; color:#334155;">Cancel</button>
-        </div>
-    </div>
-</div>
-
-<!-- BOTTOM NAV -->
-<div id="bottom-nav">
-    <div class="bn-item active" data-view="dashboard" onclick="nav('dashboard', this)">
-        <div class="icon">🏠</div><div>Home</div>
-    </div>
-    <div class="bn-item" data-view="users" onclick="nav('users', this)">
-        <div class="icon">👤</div><div>Users</div>
-    </div>
-    <div class="bn-item" data-view="adsets" onclick="nav('adsets', this)">
-        <div class="icon">📢</div><div>Ads</div>
-    </div>
-    <div class="bn-item" data-view="reconcile" onclick="nav('reconcile', this)">
-        <div class="icon">💰</div><div>Money</div>
-    </div>
-    <div class="bn-item" data-view="system" onclick="nav('system', this)">
-        <div class="icon">⚙️</div><div>System</div>
-    </div>
-</div>
-
-<script>
-    const API_URL = "https://student.dtech-services.co.za";
-    let SECRET = "";
-
-    // --- AUTH & NAV ---
-    function auth() {
-        const val = document.getElementById('admin-secret').value;
-        if(val) {
-            SECRET = val;
-            document.getElementById('login-overlay').style.display = 'none';
-            loadStats();
-
-            // Set default date to yesterday
-            const d = new Date();
-            d.setDate(d.getDate() - 1);
-            document.getElementById('recon-date').value = d.toISOString().split('T')[0];
-
-            // Ensure dashboard view active
-            nav('dashboard');
-        } else {
-            alert('Enter secret key');
-        }
-    }
-
-    function nav(view, el) {
-        // Show relevant view
-        document.querySelectorAll('.view-section').forEach(s => s.classList.remove('active'));
-        const target = document.getElementById('view-' + view);
-        if(target) target.classList.add('active');
-
-        // Update bottom nav active state
-        document.querySelectorAll('#bottom-nav .bn-item').forEach(item => {
-            if(item.dataset.view === view) item.classList.add('active');
-            else item.classList.remove('active');
-        });
-
-        // On dashboard open, refresh stats
-        if(view === 'dashboard') loadStats();
-    }
-
-    async function api(path, method='GET', body=null) {
-        try {
-            const opts = {
-                method,
-                headers: { 'Content-Type': 'application/json', 'X-Admin-Secret': SECRET }
-            };
-            if(body) opts.body = JSON.stringify(body);
-
-            // Use current host logic (keeps your original fallback)
-            const baseUrl = (location.hostname === 'localhost' || location.hostname === '127.0.0.1')
-                ? 'http://localhost:8000'
-                : 'https://dark-mud-87fb.jonasmochebane.workers.dev';
-
-            const res = await fetch(baseUrl + path, opts);
-            const data = await res.json();
-            return { ok: res.ok, data };
-        } catch(e) {
-            return { ok: false, data: { error: e.message } };
-        }
-    }
-
-    // --- DASHBOARD ---
-    async function loadStats() {
-        const { ok, data } = await api('/admin-stats');
-        if(ok) {
-            document.getElementById('s-users').innerText = data.total_users ?? 0;
-            document.getElementById('s-active').innerText = data.active_today ?? 0;
-            document.getElementById('s-rewards').innerText = 'R ' + ((data.rewards_today || 0)).toFixed(2);
-            document.getElementById('s-liability').innerText = 'R ' + ((data.liability || 0)).toFixed(2);
-            document.getElementById('sets-avail').innerText = data.unassigned_sets_count ?? 0;
-
-            // Pending Users
-            const pList = document.getElementById('pending-list');
-            pList.innerHTML = '';
-            document.getElementById('pending-badge').innerText = (data.pending_users?.length) ?? 0;
-
-            if(data.pending_users) {
-                data.pending_users.forEach(u => {
-                    const div = document.createElement('div');
-                    div.style.padding = '10px';
-                    div.style.borderBottom = '1px solid #f3f6fb';
-                    div.style.display = 'flex';
-                    div.style.justifyContent = 'space-between';
-                    div.style.alignItems = 'center';
-                    div.innerHTML = `
-                        <div style="max-width:68%;">
-                            <div style="font-weight:700;">${u.username}</div>
-                            <div style="font-size:13px; color:#64748b;">${u.whatsapp || ''}</div>
-                        </div>
-                        <div style="display:flex; gap:8px;">
-                            <button class="success" style="padding:8px 10px; font-size:13px;" onclick="approveUser('${u.username}')">APPROVE</button>
-                        </div>
-                    `;
-                    pList.appendChild(div);
-                });
-            }
-
-            // Pending Rewards (NEW)
-            const rList = document.getElementById('pending-rewards-list');
-            rList.innerHTML = '';
-            document.getElementById('pending-rewards-badge').innerText = (data.pending_rewards?.length) ?? 0;
-
-            if(data.pending_rewards) {
-                data.pending_rewards.forEach(r => {
-                    const div = document.createElement('div');
-                    div.style.padding = '10px';
-                    div.style.borderBottom = '1px solid #f3f6fb';
-                    div.style.display = 'flex';
-                    div.style.justifyContent = 'space-between';
-                    div.style.alignItems = 'center';
-                    const dateStr = new Date(r.created_at).toLocaleString();
-                    div.innerHTML = `
-                        <div>
-                            <div style="font-weight:700;">${r.username}</div>
-                            <div style="font-size:12px; color:#64748b;">${dateStr}</div>
-                        </div>
-                        <div style="text-align:right;">
-                            <div style="font-weight:bold; color:var(--accent);">R${r.amount}</div>
-                            <button class="icon-btn" style="padding:4px 8px; font-size:11px; background:#e2e8f0; color:#334155; margin-top:4px;" onclick="editPendingReward('${r.username}', '${r.id}', ${r.amount})">Edit</button>
-                        </div>
-                    `;
-                    rList.appendChild(div);
-                });
-            }
-
-            // Red Zone
-            const redList = document.getElementById('red-zone-list');
-            redList.innerHTML = '';
-            if(data.red_zone) {
-                data.red_zone.forEach(r => {
-                    const div = document.createElement('div');
-                    div.style.padding = '8px 0';
-                    div.style.borderBottom = '1px solid #f7f9fc';
-                    div.innerHTML = `<div style="font-weight:700;">${r.username}</div>
-                        <div style="font-size:13px; color:#64748b;">R${r.earned} · ${new Date(r.time).toLocaleString()}</div>`;
-                    redList.appendChild(div);
-                });
-            }
-
-            // System
-            if(data.system_status) {
-                const s = data.system_status;
-                const setBtn = (id, val, txtOn, txtOff, warnOn) => {
-                    const el = document.getElementById(id);
-                    el.innerText = val ? txtOn : txtOff;
-                    el.className = (val === warnOn) ? 'danger' : 'success';
-                };
-                setBtn('btn-sys-rewards', !s.freeze_rewards, 'NORMAL', 'PAUSED', false); 
-                setBtn('btn-sys-cut', s.emergency_cut, 'ON (50%)', 'OFF', true);
-                setBtn('btn-sys-withdraw', s.withdrawals_enabled, 'ENABLED', 'DISABLED', false);
-                setBtn('btn-sys-ads', s.ads_enabled, 'RUNNING', 'STOPPED', false);
-            }
-
-            // MOTD
-            if(data.motd) document.getElementById('sys-motd').value = data.motd;
-
-        } else {
-            console.warn('Failed to load stats', data);
-        }
-    }
-
-    async function approveUser(username) {
-        if(!confirm(`Approve ${username}?`)) return;
-        const { ok, data } = await api('/admin/user-action', 'POST', { username, action: 'approve' });
-        if(ok) { alert(data.message || 'Approved'); loadStats(); }
-        else alert(data.error || 'Error');
-    }
-
-    async function editPendingReward(username, id, currentAmount) {
-        const newAmt = prompt(`Edit amount for ${username}:`, currentAmount);
-        if (newAmt === null) return;
-        const amount = parseFloat(newAmt);
-        if (isNaN(amount)) return alert("Invalid number");
-
-        const { ok, data } = await api('/admin/user-action', 'POST', {
-            username: username,
-            action: 'update_pending_reward',
-            value: { id: id, amount: amount }
-        });
-
-        if (ok) {
-            alert("Reward Updated");
-            loadStats();
-            // If user details view is open, refresh it
-            if(document.getElementById('u-details').style.display === 'block') {
-                lookupUser(); // This refreshes the details view
-            }
-        } else {
-            alert(data.error || "Failed to update");
-        }
-    }
-
-    async function toggleSys(action) {
-        const { data } = await api('/admin-stats');
-        if(!data) return alert('Unable to fetch system state');
-        const s = data.system_status || {};
-        let val = false;
-        if(action === 'toggle_freeze_rewards') val = !s.freeze_rewards;
-        if(action === 'toggle_emergency_cut') val = !s.emergency_cut;
-        if(action === 'toggle_withdrawals') val = !s.withdrawals_enabled;
-        if(action === 'toggle_ads') val = !s.ads_enabled;
-
-        await api('/admin/system-action', 'POST', { action, value: val });
-        loadStats();
-    }
-
-    async function saveMotd() {
-        const val = document.getElementById('sys-motd').value;
-        if(!val) return;
-        const { ok, data } = await api('/admin/system-action', 'POST', { action: 'set_motd', value: val });
-        if(ok) alert('Updated');
-        else alert('Error: ' + (data.error || 'Unknown'));
-    }
-
-    async function clearMotd() {
-        if(!confirm('Clear MOTD?')) return;
-        const { ok, data } = await api('/admin/system-action', 'POST', { action: 'set_motd', value: '' });
-        if(ok) { document.getElementById('sys-motd').value = ''; alert('Cleared'); }
-    }
-
-    // --- USERS ---
-    async function lookupUser() {
-        const u = document.getElementById('u-search').value.trim();
-        if(!u) return alert('Enter username');
-        const { ok, data } = await api('/admin/user-action', 'POST', { username: u, action: 'get_details' });
-        if(ok && data.user) {
-            const user = data.user;
-            document.getElementById('u-details').style.display = 'block';
-            document.getElementById('u-name').innerText = user.username;
-            document.getElementById('u-bal').innerText = 'R ' + ((user.balance||0)).toFixed(2);
-            document.getElementById('u-pend').innerText = 'R ' + ((user.balance_pending||0)).toFixed(2);
-            document.getElementById('u-ref').innerText = 'R ' + ((user.referral_balance||0)).toFixed(2);
-            document.getElementById('u-ref-by').innerText = user.referred_by || 'None';
-            document.getElementById('u-ref-cnt').innerText = user.referral_count || 0;
-
-            document.getElementById('btn-freeze').innerText = user.is_frozen ? "UNFREEZE" : "FREEZE";
-
-            const ds = document.getElementById('u-daily-stats');
-            ds.innerHTML = '';
-            if(user.daily_stats) {
-                Object.keys(user.daily_stats).sort().reverse().slice(0,5).forEach(date => {
-                    const d = user.daily_stats[date];
-                    ds.innerHTML += `<div style="margin-bottom:6px;"><strong>${date}</strong>: Pending R${(d.total_pending||0).toFixed(2)} | Approved R${(d.total_approved||0).toFixed(2)} <span style="color:#94a3b8">(${d.status||'—'})</span></div>`;
-                });
-            } else ds.innerHTML = '<div style="color:#94a3b8">No recent stats</div>';
-
-            // PENDING REWARDS LIST
-            const prContainer = document.getElementById('u-pending-rewards-container');
-            const prList = document.getElementById('u-pending-rewards-list');
-            prList.innerHTML = '';
-
-            if (user.pending_rewards && user.pending_rewards.length > 0) {
-                prContainer.style.display = 'block';
-                user.pending_rewards.forEach(r => {
-                    const div = document.createElement('div');
-                    div.style.marginBottom = '6px';
-                    div.style.display = 'flex';
-                    div.style.justifyContent = 'space-between';
-                    div.style.alignItems = 'center';
-                    div.innerHTML = `
-                        <div style="font-size:12px; color:#64748b;">
-                            ${new Date(r.created_at).toLocaleString()}
-                        </div>
-                        <div style="text-align:right;">
-                            <span style="font-weight:bold; color:var(--accent);">R${r.amount}</span>
-                            <button style="padding:2px 6px; font-size:10px; background:#cbd5e1; color:#0f172a; border-radius:4px; border:none; margin-left:6px;" onclick="editPendingReward('${user.username}', '${r.id}', ${r.amount})">Edit</button>
-                        </div>
-                    `;
-                    prList.appendChild(div);
-                });
-            } else {
-                prContainer.style.display = 'none';
-            }
-
-        } else {
-            alert('User not found');
-        }
-    }
-
-    async function actUser(action) {
-        const u = document.getElementById('u-search').value.trim();
-        if(!u) return alert('Enter username first');
-        const btn = document.getElementById(action === 'freeze' ? 'btn-freeze' : 'btn-shadow');
-        let realAction = action;
-        if(action === 'freeze') {
-            if(btn && btn.innerText === 'UNFREEZE') realAction = 'unfreeze';
-        }
-        await api('/admin/user-action', 'POST', { username: u, action: realAction, value: true });
-        lookupUser();
-    }
-
-    async function adjustBal() {
-        const amt = prompt("Amount to add (use negative to subtract):");
-        if(amt === null) return;
-        if(isNaN(Number(amt))) return alert('Enter a number');
-        const u = document.getElementById('u-search').value.trim();
-        if(!u) return alert('Enter username first');
-        await api('/admin/user-action', 'POST', { username: u, action: 'adjust_balance', value: Number(amt) });
-        lookupUser();
-    }
-
-    // ... (rest of the file remains unchanged)
-    // I'll copy the rest to ensure file integrity.
-
-    // --- ADVANCED USER ACTIONS ---
-    function openEditUser() {
-        document.getElementById('edit-user-overlay').style.display = 'flex';
-        // Can't pre-fill easily without exposing PII in lookup response,
-        // but lookupUser response might have it.
-        // Current get_details response: user object.
-        // Let's assume user object is available in scope or we re-fetch.
-        // For now, start blank or simple.
-    }
-
-    async function saveUserEdit() {
-        const u = document.getElementById('u-search').value.trim();
-        if(!u) return;
-
-        const payload = {
-            username: u,
-            action: 'update_profile',
-            value: {
-                email: document.getElementById('edit-email').value,
-                whatsapp: document.getElementById('edit-whatsapp').value,
-                password: document.getElementById('edit-password').value
-            }
-        };
-        const { ok, data } = await api('/admin/user-action', 'POST', payload);
-        if(ok) { alert(data.message); document.getElementById('edit-user-overlay').style.display='none'; }
-        else alert(data.error);
-    }
-
-    async function sendUserMsg() {
-        const u = document.getElementById('u-search').value.trim();
-        const msg = document.getElementById('u-msg-input').value;
-        if(!u || !msg) return;
-        const { ok } = await api('/admin/user-action', 'POST', { username: u, action: 'send_message', value: msg });
-        if(ok) alert('Message Sent');
-    }
-
-    async function approveAllPending() {
-        if(!confirm('Approve all pending users? This consumes ad sets.')) return;
-        const { ok, data } = await api('/admin/system-action', 'POST', { action: 'approve_all_pending' });
-        if(ok) { alert(data.message); loadStats(); }
-    }
-
-    async function freezeRedZone() {
-        if(!confirm('Freeze ALL users in Red Zone?')) return;
-        const { ok, data } = await api('/admin/system-action', 'POST', { action: 'freeze_red_zone' });
-        if(ok) { alert(data.message); loadStats(); }
-    }
-
-    // --- AD SETS ---
-    function toggleAdForm() {
-        const el = document.getElementById('adset-form');
-        el.style.display = (el.style.display === 'none' || el.style.display === '') ? 'block' : 'none';
-        // scroll into view on mobile
-        if(el.style.display === 'block') el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    }
-
-    async function createAdSet() {
-        const get = (type, field) => document.querySelector(`.ad-in[data-type="${type}"][name="${field}"]`)?.value || '';
-
-        const payload = {
-            popunder: { id: get('popunder','id'), tag: get('popunder','tag') },
-            inpage: { id: get('inpage','id'), tag: get('inpage','tag') },
-            direct: { id: get('direct','id'), link: get('direct','link') },
-            push: { id: get('push','id'), tag: get('push','tag') }
-        };
-
-        const { ok, data } = await api('/admin/ad-sets', 'POST', payload);
-        if(ok) { alert('Created Set: ' + (data.id || 'OK')); toggleAdForm(); loadStats(); loadAdSetsInventory(); }
-        else alert(data.error || 'Error creating set');
-    }
-
-    async function loadAdSetsInventory() {
-        const { ok, data } = await api('/admin/ad-sets');
-        const tbody = document.getElementById('adset-list');
-        tbody.innerHTML = '';
-
-        if(ok && Array.isArray(data)) {
-            data.forEach(set => {
-                const isAssigned = !!set.assigned_to;
-                const tr = document.createElement('tr');
-                tr.innerHTML = `
-                    <td style="font-size:12px;">${set.id}</td>
-                    <td style="font-size:11px; color:#64748b;">
-                        P: ${set.popunder?.id || '-'}<br>I: ${set.inpage?.id || '-'}
-                    </td>
-                    <td>
-                        ${isAssigned
-                            ? `<span style="color:#2563eb; font-weight:700;">${set.assigned_to}</span>`
-                            : `<span style="color:#10b981;">Available</span>`}
-                    </td>
-                    <td>
-                        ${isAssigned
-                            ? `<button class="danger" style="padding:6px 10px; font-size:11px;" onclick="unlinkUserFromSet('${set.assigned_to}')">CLEAR</button>`
-                            : ''}
-                    </td>
-                `;
-                tbody.appendChild(tr);
-            });
-        }
-    }
-
-    async function unlinkUserFromSet(username) {
-        if(!confirm(`Clear Ad Set from user ${username} and return them to Pending?`)) return;
-        const { ok, data } = await api('/admin/user-action', 'POST', { username, action: 'unlink_ad_set' });
-        if(ok) {
-            alert(data.message);
-            loadAdSetsInventory();
-            loadStats(); // Update stats counters
-        } else {
-            alert(data.error || 'Error unlinking set');
-        }
-    }
-
-    // --- RECONCILIATION ---
-    let reconApprovals = [];
-
-    async function processRecon() {
-        const file = document.getElementById('csv-file').files[0];
-        const date = document.getElementById('recon-date').value;
-        if(!file || !date) return alert("Select File and Date");
-
-        const reader = new FileReader();
-        reader.onload = async (e) => {
-            const csv = e.target.result;
-            await analyzeCSV(csv, date);
-            // scroll preview into view
-            const preview = document.getElementById('recon-preview');
-            if(preview) preview.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        };
-        reader.readAsText(file);
-    }
-
-    async function analyzeCSV(csv, date) {
-        // 1. Fetch Ad Sets to map Zone ID -> User
-        const { data: sets } = await api('/admin/ad-sets') || { data: [] };
-        const zoneMap = {}; // ZoneID -> { user: username, type: 'popunder'|'inpage'... }
-
-        (sets || []).forEach(s => {
-            if(s.assigned_to) {
-                const u = s.assigned_to;
-                if(s.popunder?.id) zoneMap[String(s.popunder.id).trim()] = { user: u, type: 'popunder', popunder: s.popunder };
-                if(s.inpage?.id) zoneMap[String(s.inpage.id).trim()] = { user: u, type: 'inpage', inpage: s.inpage };
-                if(s.push?.id) zoneMap[String(s.push.id).trim()] = { user: u, type: 'push', push: s.push };
-                if(s.direct?.id) zoneMap[String(s.direct.id).trim()] = { user: u, type: 'direct', direct: s.direct };
-            }
-        });
-
-        // 2. Parse CSV (supports both ; and ,)
-        const lines = csv.split(/\r?\n/).filter(l => l.trim().length > 0);
-        const userReal = {}; // username -> { popunder: 0, inpage: 0... , total: 0 }
-
-        // Find header line with Zone ID and Profit
-        let headerParts = null;
-        let delimiter = ';';
-        for(const line of lines.slice(0, 6)) {
-            if(line.includes('Zone ID') || line.toLowerCase().includes('zone')) {
-                headerParts = line.split(/[,;]+/).map(p => p.replace(/"/g,'').trim());
-                delimiter = line.includes(',') && !line.includes(';') ? ',' : ';';
-                break;
-            }
-        }
-
-        // fallback: try first line as header
-        if(!headerParts && lines.length) {
-            headerParts = lines[0].split(/[,;]+/).map(p => p.replace(/"/g,'').trim());
-        }
-
-        const idxZone = headerParts ? headerParts.findIndex(p => /zone\s*id/i.test(p) || /zone/i.test(p)) : -1;
-        const idxProfit = headerParts ? headerParts.findIndex(p => /profit/i.test(p) || /revenue|earning/i.test(p)) : -1;
-
-        // iterate over data rows (skip header if we used first line)
-        const dataRows = headerParts && lines[0].split(/[,;]+/).length === headerParts.length ? lines.slice(1) : lines;
-        dataRows.forEach(line => {
-            const parts = line.split(new RegExp(`[${delimiter}]`)).map(p => p.replace(/"/g,'').trim());
-            if(idxZone >= 0 && idxProfit >= 0 && parts.length > Math.max(idxZone, idxProfit)) {
-                const zone = parts[idxZone];
-                const profit = parseFloat(parts[idxProfit].replace(/[^0-9.\-]/g,'')) || 0;
-                const map = zoneMap[String(zone).trim()];
-                if(map) {
-                    if(!userReal[map.user]) userReal[map.user] = { popunder:0, inpage:0, direct:0, push:0, total:0 };
-                    userReal[map.user][map.type] += profit;
-                    userReal[map.user].total += profit;
+    <script>
+        const API_URL = "https://crimson-art-f482.lefa4082.workers.dev";
+
+        async function loadUsers() {
+            try {
+                const res = await fetch(`${API_URL}/admin/users`);
+                const users = await res.json();
+
+                const tbody = document.getElementById('users-list');
+                tbody.innerHTML = '';
+
+                if (users.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="4">No users found.</td></tr>';
+                    return;
                 }
+
+                users.forEach(user => {
+                    const tr = document.createElement('tr');
+                    if (user.is_banned) tr.className = 'banned-row';
+
+                    tr.innerHTML = `
+                        <td><strong>${user.username}</strong></td>
+                        <td>${user.points}</td>
+                        <td>
+                            ${user.is_banned ? '<span style="color:#ef4444; font-weight:bold;">Banned</span>' : '<span style="color:#10b981;">Active</span>'}
+                        </td>
+                        <td>
+                            <button class="action-btn btn-edit" onclick="editBalance('${user.username}', ${user.points})">Edit Pts</button>
+                            ${user.is_banned
+                                ? `<button class="action-btn btn-unban" onclick="userAction('${user.username}', 'unban')">Unban</button>`
+                                : `<button class="action-btn btn-ban" onclick="userAction('${user.username}', 'ban')">Ban</button>`
+                            }
+                            <button class="action-btn btn-delete" onclick="userAction('${user.username}', 'delete')">Delete</button>
+                        </td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            } catch(e) {
+                document.getElementById('users-list').innerHTML = '<tr><td colspan="4" style="color:red;">Error loading users.</td></tr>';
             }
-        });
-
-        // 3. Fetch User Pendings for that Date
-        const users = Object.keys(userReal);
-        const userPending = {}; // username -> { popunder: 0 ... total: 0 }
-
-        await Promise.all(users.map(async u => {
-            const { data } = await api('/admin/user-action', 'POST', { username: u, action: 'get_details' });
-            if(data?.user && data.user.daily_stats && data.user.daily_stats[date]) {
-                const s = data.user.daily_stats[date];
-                userPending[u] = {
-                    total: s.total_pending || 0,
-                    popunder: s.popunder?.pending || 0,
-                    inpage: s.inpage?.pending || 0,
-                    direct: s.direct?.pending || 0,
-                    push: s.push?.pending || 0
-                };
-            } else {
-                userPending[u] = { total: 0, popunder:0, inpage:0, direct:0, push:0 };
-            }
-        }));
-
-        // 4. Calculate Approvals
-        const tbody = document.getElementById('recon-body');
-        tbody.innerHTML = '';
-        reconApprovals = [];
-        const CONV = 16.00; // conversion rate (USD -> ZAR)
-
-        users.forEach(u => {
-            const p = userPending[u];
-            const r = userReal[u];
-
-            const rZar = (r.total || 0) * CONV;
-            const pZar = p.total || 0; // Already in ZAR
-
-            let approvedTotal = 0;
-
-            if (pZar < rZar) {
-                const ded = 0.05 + Math.random() * 0.15; // 0.05 - 0.20
-                approvedTotal = pZar * (1 - ded);
-            } else {
-                const ded = 0.05 + Math.random() * 0.05; // 0.05 - 0.10
-                approvedTotal = rZar * (1 - ded);
-            }
-
-            approvedTotal = parseFloat(approvedTotal.toFixed(2));
-
-            const ratio = rZar > 0 ? (approvedTotal / rZar) : 0;
-
-            const breakdown = {
-                popunder: parseFloat(((r.popunder || 0) * CONV * ratio).toFixed(2)),
-                inpage: parseFloat(((r.inpage || 0) * CONV * ratio).toFixed(2)),
-                direct: parseFloat(((r.direct || 0) * CONV * ratio).toFixed(2)),
-                push: parseFloat(((r.push || 0) * CONV * ratio).toFixed(2))
-            };
-
-            const checkSum = breakdown.popunder + breakdown.inpage + breakdown.direct + breakdown.push;
-            approvedTotal = parseFloat(checkSum.toFixed(2));
-
-            reconApprovals.push({
-                username: u,
-                total: approvedTotal,
-                breakdown: breakdown
-            });
-
-            tbody.innerHTML += `
-                <tr>
-                    <td>${u}</td>
-                    <td>R ${pZar.toFixed(2)}</td>
-                    <td>$${(r.total||0).toFixed(2)} (R${rZar.toFixed(2)})</td>
-                    <td style="font-weight:bold; color:var(--success);">R ${approvedTotal.toFixed(2)}</td>
-                    <td style="font-size:12px;">
-                        Pop: ${breakdown.popunder} | In: ${breakdown.inpage} | Dir: ${breakdown.direct} | Push: ${breakdown.push}
-                    </td>
-                </tr>
-            `;
-        });
-
-        document.getElementById('recon-preview').style.display = 'block';
-    }
-
-    async function confirmRecon() {
-        if(!confirm("Process Payouts?")) return;
-        const date = document.getElementById('recon-date').value;
-        const { ok, data } = await api('/admin/reconcile', 'POST', { date, approvals: reconApprovals });
-        if(ok) {
-            alert(data.message || 'Processed');
-            document.getElementById('recon-preview').style.display = 'none';
-        } else {
-            alert(data.error || 'Error processing payouts');
         }
-    }
 
-    // --- CERTIFICATES ---
-    function handleCertFile(files) {
-        if(!files[0]) return;
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            const img = new Image();
-            img.onload = () => {
-                const canvas = document.createElement('canvas');
-                const ctx = canvas.getContext('2d');
-                canvas.width = img.width;
-                canvas.height = img.height;
-                ctx.drawImage(img,0,0);
-                const imageData = ctx.getImageData(0,0,canvas.width,canvas.height);
-                const code = jsQR(imageData.data, imageData.width, imageData.height);
-                if(code) {
-                    verifyCertId(code.data);
+        async function editBalance(username, currentPoints) {
+            const newPts = prompt(`Enter new points for ${username}:`, currentPoints);
+            if (newPts === null || newPts === "") return;
+
+            const points = parseInt(newPts);
+            if (isNaN(points)) return alert("Please enter a valid number.");
+
+            await userAction(username, 'edit_balance', points);
+        }
+
+        async function userAction(username, action, value = null) {
+            if (action === 'delete') {
+                if (!confirm(`Are you sure you want to permanently delete ${username}?`)) return;
+            }
+
+            try {
+                const res = await fetch(`${API_URL}/admin/action`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ username, action, value })
+                });
+
+                if (res.ok) {
+                    loadUsers(); // refresh table
                 } else {
-                    alert("No QR Code found");
+                    const data = await res.json();
+                    alert(data.error || "Action failed");
                 }
-            };
-            img.src = e.target.result;
-        };
-        reader.readAsDataURL(files[0]);
-    }
-
-    function verifyCertManual() {
-        const id = document.getElementById('cert-manual-id').value.trim();
-        if(id) verifyCertId(id);
-    }
-
-    // --- SYSTEM TABS ---
-    function switchSysTab(tab, btn) {
-        document.querySelectorAll('.sys-section').forEach(el => el.style.display = 'none');
-        document.getElementById('sys-tab-' + tab).style.display = 'block';
-
-        document.querySelectorAll('.sub-tab').forEach(el => el.classList.remove('active'));
-        btn.classList.add('active');
-
-        if(tab === 'config') loadSystemConfig();
-        if(tab === 'analytics') loadSystemHistory();
-        if(tab === 'logs') loadSystemLogs();
-    }
-
-    async function loadSystemConfig() {
-        const { ok, data } = await api('/admin/system-config');
-        if(ok) {
-            const c = data;
-            document.getElementById('cfg-budget').value = c.monthly_budget;
-            document.getElementById('cfg-min-w').value = c.min_withdrawal;
-            document.getElementById('cfg-max-w').value = c.max_withdrawal;
-
-            document.getElementById('cfg-r1-min').value = c.rewards.r1_min;
-            document.getElementById('cfg-r1-max').value = c.rewards.r1_max;
-            document.getElementById('cfg-r2-l-min').value = c.rewards.r2_min_low;
-            document.getElementById('cfg-r2-l-max').value = c.rewards.r2_max_low;
-            document.getElementById('cfg-r2-h-min').value = c.rewards.r2_min_high;
-            document.getElementById('cfg-r2-h-max').value = c.rewards.r2_max_high;
-            document.getElementById('cfg-r3-min').value = c.rewards.r3_min;
-            document.getElementById('cfg-r3-max').value = c.rewards.r3_max;
-
-            document.getElementById('cfg-mis-pop').value = c.mission_targets.popunder;
-            document.getElementById('cfg-mis-inp').value = c.mission_targets.inpage;
-            document.getElementById('cfg-mis-dir').value = c.mission_targets.direct;
-
-            document.getElementById('cfg-cool-r1').value = c.cooldowns.r1;
-            document.getElementById('cfg-cool-r2').value = c.cooldowns.r2;
-        }
-    }
-
-    async function saveSystemConfig() {
-        const getVal = (id) => parseFloat(document.getElementById(id).value);
-        const payload = {
-            monthly_budget: getVal('cfg-budget'),
-            min_withdrawal: getVal('cfg-min-w'),
-            max_withdrawal: getVal('cfg-max-w'),
-            mission_targets: {
-                popunder: getVal('cfg-mis-pop'),
-                inpage: getVal('cfg-mis-inp'),
-                direct: getVal('cfg-mis-dir')
-            },
-            rewards: {
-                r1_min: getVal('cfg-r1-min'), r1_max: getVal('cfg-r1-max'),
-                r2_min_low: getVal('cfg-r2-l-min'), r2_max_low: getVal('cfg-r2-l-max'),
-                r2_min_high: getVal('cfg-r2-h-min'), r2_max_high: getVal('cfg-r2-h-max'),
-                r3_min: getVal('cfg-r3-min'), r3_max: getVal('cfg-r3-max'),
-                shadow_min: 0.0001, shadow_max: 0.001
-            },
-            cooldowns: {
-                r1: getVal('cfg-cool-r1'),
-                r2: getVal('cfg-cool-r2')
+            } catch(e) {
+                alert("Network error.");
             }
-        };
-        const { ok } = await api('/admin/system-config', 'POST', payload);
-        if(ok) alert('Configuration Saved');
-        else alert('Error saving config');
-    }
-
-    async function loadSystemLogs() {
-        const { ok, data } = await api('/admin/system-action', 'POST', { action: 'get_logs' });
-        if(ok && data.logs) {
-            const div = document.getElementById('sys-logs-list');
-            div.innerHTML = data.logs.map(l =>
-                `<div style="border-bottom:1px solid #eee; padding:4px;">
-                    <span style="color:#94a3b8;">${new Date(l.time).toLocaleString()}</span>
-                    <strong>${l.action}</strong>: ${l.details}
-                </div>`
-            ).join('');
-        }
-    }
-
-    async function loadSystemHistory() {
-        const { ok, data } = await api('/admin/system-action', 'POST', { action: 'get_history' });
-        if(ok && data.history) {
-            const chart = document.getElementById('analytics-chart');
-            // Find max for scaling
-            const maxVal = Math.max(...data.history.map(h => h.active + (h.ads/10))); // Rough scaling
-
-            chart.innerHTML = data.history.map(h => {
-                const height = Math.max(10, (h.active / (maxVal || 1)) * 100);
-                return `
-                <div style="width:20px; background:var(--primary); height:${height}%; position:relative; border-radius:4px 4px 0 0;" title="${h.date}: ${h.active} Users, ${h.ads} Ads">
-                    <div style="position:absolute; bottom:-20px; font-size:10px; transform:rotate(-45deg); left:-5px;">${h.date.slice(5)}</div>
-                </div>`;
-            }).join('');
-        }
-    }
-
-    async function verifyCertId(idStr) {
-        let id = idStr;
-        if(id.includes('CERT-')) {
-             const match = id.match(/CERT-[A-Z0-9-]+/);
-             if(match) id = match[0];
         }
 
-        const { ok, data } = await api(`/certificate?id=${encodeURIComponent(id)}`);
-        const res = document.getElementById('cert-result');
-        res.style.display = 'block';
-
-        if(ok && data) {
-            res.innerHTML = `
-                <h3 style="margin-bottom:8px;">${(data.status || '').toUpperCase()}</h3>
-                <div style="margin-bottom:6px;">User: <strong>${data.username || '—'}</strong></div>
-                <div style="margin-bottom:8px;">Amount: R${data.amount ?? '0.00'} (Payout R${data.payout ?? '0.00'})</div>
-                ${(data.status !== 'paid') ? `<button class="success" onclick="payCert('${data.id}')">MARK PAID</button>` : `<div style="color:var(--success); font-weight:700;">Already Paid</div>`}
-            `;
-        } else {
-            res.innerHTML = `<div style="color:#ef4444; font-weight:700;">Invalid Certificate</div>`;
-        }
-    }
-
-    async function payCert(id) {
-        const { ok, data } = await api('/mark-cert-paid', 'POST', { id, admin_secret: SECRET });
-        if(ok) { alert('Paid'); verifyCertId(id); }
-        else alert(data.error || 'Failed to mark paid');
-    }
-
-    // Initialize: hide all sections except default
-    document.addEventListener('DOMContentLoaded', () => {
-        // By default keep dashboard visible; other views hidden already by class.
-        // Ensure recon date defaults if login skipped (dev)
-        const d = new Date();
-        d.setDate(d.getDate() - 1);
-        if(!document.getElementById('recon-date').value) document.getElementById('recon-date').value = d.toISOString().split('T')[0];
-    });
-</script>
-
+        // Initialize
+        loadUsers();
+    </script>
 </body>
 </html>
