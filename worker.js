@@ -26,10 +26,18 @@ export default {
         return await handleGetUser(request, env);
       } else if (path === '/add-point' && request.method === 'POST') {
         return await handleAddPoint(request, env);
+      } else if (path === '/withdraw' && request.method === 'POST') {
+        return await handleWithdraw(request, env);
+      } else if (path === '/withdrawals' && request.method === 'GET') {
+        return await handleGetUserWithdrawals(request, env);
       } else if (path === '/admin/users' && request.method === 'GET') {
         return await handleAdminUsers(request, env);
       } else if (path === '/admin/action' && request.method === 'POST') {
         return await handleAdminAction(request, env);
+      } else if (path === '/admin/withdrawals' && request.method === 'GET') {
+        return await handleAdminWithdrawals(request, env);
+      } else if (path === '/admin/withdrawal-action' && request.method === 'POST') {
+        return await handleAdminWithdrawalAction(request, env);
       } else {
         return new Response('Not Found', { status: 404, headers: getCorsHeaders(request) });
       }
@@ -212,4 +220,108 @@ async function handleAdminAction(request, env) {
 
   await env.ACC_KV.put(`user:${username}`, JSON.stringify(user));
   return new Response(JSON.stringify({ message: 'Action successful' }), { status: 200, headers: getCorsHeaders(request) });
+}
+
+async function handleWithdraw(request, env) {
+  const { username, points, amount, accountNumber, accountName } = await request.json();
+
+  if (!username || !points || !amount || !accountNumber) {
+    return new Response(JSON.stringify({ error: 'Missing required fields' }), { status: 400, headers: getCorsHeaders(request) });
+  }
+
+  // Validate tier
+  const validTiers = {
+    1000: 10,
+    1500: 15,
+    2000: 20
+  };
+
+  if (validTiers[points] !== amount) {
+    return new Response(JSON.stringify({ error: 'Invalid points to amount conversion' }), { status: 400, headers: getCorsHeaders(request) });
+  }
+
+  const userJson = await env.ACC_KV.get(`user:${username}`);
+  if (!userJson) {
+    return new Response(JSON.stringify({ error: 'User not found' }), { status: 404, headers: getCorsHeaders(request) });
+  }
+
+  const user = JSON.parse(userJson);
+
+  if (user.points < points) {
+    return new Response(JSON.stringify({ error: 'Insufficient points' }), { status: 400, headers: getCorsHeaders(request) });
+  }
+
+  // Deduct points
+  user.points -= points;
+  await env.ACC_KV.put(`user:${username}`, JSON.stringify(user));
+
+  const withdrawal = {
+    id: Date.now().toString() + Math.random().toString(36).substr(2, 5),
+    username,
+    points,
+    amount,
+    accountNumber,
+    accountName: accountName || '',
+    status: 'pending',
+    timestamp: Date.now()
+  };
+
+  // Add to global withdrawals list
+  let withdrawalsJson = await env.ACC_KV.get('withdrawals_list');
+  let withdrawals = withdrawalsJson ? JSON.parse(withdrawalsJson) : [];
+  withdrawals.push(withdrawal);
+  await env.ACC_KV.put('withdrawals_list', JSON.stringify(withdrawals));
+
+  return new Response(JSON.stringify({ message: 'Withdrawal requested successfully', withdrawal }), { status: 200, headers: getCorsHeaders(request) });
+}
+
+async function handleGetUserWithdrawals(request, env) {
+  const url = new URL(request.url);
+  const username = url.searchParams.get('username');
+  if (!username) {
+    return new Response(JSON.stringify({ error: 'Missing username' }), { status: 400, headers: getCorsHeaders(request) });
+  }
+
+  let withdrawalsJson = await env.ACC_KV.get('withdrawals_list');
+  let withdrawals = withdrawalsJson ? JSON.parse(withdrawalsJson) : [];
+
+  let userWithdrawals = withdrawals.filter(w => w.username === username);
+
+  return new Response(JSON.stringify(userWithdrawals), { status: 200, headers: getCorsHeaders(request) });
+}
+
+async function handleAdminWithdrawals(request, env) {
+  let withdrawalsJson = await env.ACC_KV.get('withdrawals_list');
+  let withdrawals = withdrawalsJson ? JSON.parse(withdrawalsJson) : [];
+
+  // Sort by timestamp descending
+  withdrawals.sort((a, b) => b.timestamp - a.timestamp);
+
+  return new Response(JSON.stringify(withdrawals), { status: 200, headers: getCorsHeaders(request) });
+}
+
+async function handleAdminWithdrawalAction(request, env) {
+  const { id, action } = await request.json();
+
+  if (!id || !action) {
+    return new Response(JSON.stringify({ error: 'Missing id or action' }), { status: 400, headers: getCorsHeaders(request) });
+  }
+
+  let withdrawalsJson = await env.ACC_KV.get('withdrawals_list');
+  let withdrawals = withdrawalsJson ? JSON.parse(withdrawalsJson) : [];
+
+  let withdrawal = withdrawals.find(w => w.id === id);
+  if (!withdrawal) {
+    return new Response(JSON.stringify({ error: 'Withdrawal not found' }), { status: 404, headers: getCorsHeaders(request) });
+  }
+
+  if (action === 'paid') {
+    withdrawal.status = 'paid';
+  } else {
+    return new Response(JSON.stringify({ error: 'Invalid action' }), { status: 400, headers: getCorsHeaders(request) });
+  }
+
+  await env.ACC_KV.put('withdrawals_list', JSON.stringify(withdrawals));
+
+  return new Response(JSON.stringify({ message: 'Withdrawal marked as paid' }), { status: 200, headers: getCorsHeaders(request) });
 }

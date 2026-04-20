@@ -105,6 +105,87 @@
         .back-link:hover {
             text-decoration: underline;
         }
+
+        .form-group {
+            margin-bottom: 15px;
+            text-align: left;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+
+        .form-group input, .form-group select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--text-main);
+            box-sizing: border-box;
+            font-family: inherit;
+        }
+
+        .form-group select option {
+            background: var(--surface);
+            color: var(--text-main);
+        }
+
+        .form-note {
+            font-size: 0.8rem;
+            color: var(--danger);
+            margin-top: 5px;
+            display: block;
+        }
+
+        .history-section {
+            margin-top: 30px;
+            text-align: left;
+        }
+
+        .history-section h2 {
+            font-size: 1.2rem;
+            color: var(--text-main);
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 10px;
+            margin-bottom: 15px;
+        }
+
+        .history-item {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            font-size: 0.9rem;
+            border-left: 3px solid var(--text-muted);
+        }
+
+        .history-item.status-pending {
+            border-left-color: #f59e0b; /* Amber for pending */
+        }
+
+        .history-item.status-paid {
+            border-left-color: var(--success);
+        }
+
+        .history-item strong {
+            color: var(--text-main);
+        }
+
+        .status-badge {
+            float: right;
+            font-size: 0.8rem;
+            padding: 2px 6px;
+            border-radius: 4px;
+            text-transform: uppercase;
+            font-weight: 600;
+        }
+        .status-badge.pending { background: rgba(245, 158, 11, 0.2); color: #f59e0b; }
+        .status-badge.paid { background: rgba(16, 185, 129, 0.2); color: var(--success); }
+
     </style>
 </head>
 <body>
@@ -112,18 +193,42 @@
     <div class="container">
         <div class="card">
             <h1>Cash Out</h1>
-            <p>Exchange your hard-earned points for rewards.</p>
-
-            <div class="req-box">
-                Minimum Withdrawal:<br>
-                <span>1000 Points</span>
-            </div>
+            <p>Exchange your hard-earned points for rewards directly to your bank account.</p>
 
             <div class="current-bal">
                 Your Balance: <span id="withdraw-points">0</span> pts
             </div>
 
-            <button id="withdraw-btn" onclick="alert('Withdrawals are currently being processed manually by the Admin.')" disabled>Request Withdrawal</button>
+            <div class="form-group">
+                <label for="withdraw-tier">Select Amount:</label>
+                <select id="withdraw-tier">
+                    <option value="1000,10">1000 Points = 10 USD</option>
+                    <option value="1500,15">1500 Points = 15 USD</option>
+                    <option value="2000,20">2000 Points = 20 USD</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="account-number">Bank Account Number:</label>
+                <input type="text" id="account-number" placeholder="Enter exactly as shown" required>
+                <span class="form-note">Please ensure exact accuracy. Payment is sent to the account number provided.</span>
+            </div>
+
+            <div class="form-group">
+                <label for="account-name">Name / Initials (Optional):</label>
+                <input type="text" id="account-name" placeholder="John D">
+            </div>
+
+            <button id="withdraw-btn" onclick="submitWithdrawal()" disabled>Request Withdrawal</button>
+        </div>
+
+        <div class="card" style="margin-top: 20px;">
+            <div class="history-section">
+                <h2>Withdrawal History</h2>
+                <div id="history-list">
+                    <p style="color: var(--text-muted); font-size: 0.9rem;">No past withdrawals.</p>
+                </div>
+            </div>
         </div>
 
         <div style="text-align: center;">
@@ -139,30 +244,121 @@
             window.location.href = 'index.html';
         }
 
+        let currentPoints = 0;
+
         async function fetchPoints() {
             try {
                 const res = await fetch(`${API_URL}/user?username=${encodeURIComponent(user.username)}`);
                 const data = await res.json();
 
                 if (res.ok) {
-                    const points = data.points;
-                    document.getElementById('withdraw-points').innerText = points;
-
-                    const btn = document.getElementById('withdraw-btn');
-                    if (points >= 1000) {
-                        btn.disabled = false;
-                        btn.innerText = "Request Withdrawal";
-                    } else {
-                        btn.disabled = true;
-                        btn.innerText = "Not Enough Points";
-                    }
+                    currentPoints = data.points;
+                    document.getElementById('withdraw-points').innerText = currentPoints;
+                    checkEligibility();
                 }
             } catch(e) {
                 console.error("Failed to fetch points", e);
             }
         }
 
+        function checkEligibility() {
+            const btn = document.getElementById('withdraw-btn');
+            const tierVal = document.getElementById('withdraw-tier').value;
+            const requiredPoints = parseInt(tierVal.split(',')[0]);
+
+            if (currentPoints >= requiredPoints) {
+                btn.disabled = false;
+                btn.innerText = "Request Withdrawal";
+            } else {
+                btn.disabled = true;
+                btn.innerText = "Not Enough Points";
+            }
+        }
+
+        document.getElementById('withdraw-tier').addEventListener('change', checkEligibility);
+
+        async function fetchHistory() {
+            try {
+                const res = await fetch(`${API_URL}/withdrawals?username=${encodeURIComponent(user.username)}`);
+                const data = await res.json();
+
+                if (res.ok) {
+                    const list = document.getElementById('history-list');
+                    if (data.length === 0) {
+                        list.innerHTML = '<p style="color: var(--text-muted); font-size: 0.9rem;">No past withdrawals.</p>';
+                        return;
+                    }
+
+                    list.innerHTML = '';
+                    data.sort((a, b) => b.timestamp - a.timestamp).forEach(w => {
+                        const statusClass = w.status === 'paid' ? 'paid' : 'pending';
+                        list.innerHTML += `
+                            <div class="history-item status-${statusClass}">
+                                <span class="status-badge ${statusClass}">${w.status}</span>
+                                <strong>${w.points} Points</strong> for <strong>$${w.amount}</strong><br>
+                                <span style="color: var(--text-muted); font-size: 0.8rem;">Acc: ${w.accountNumber}</span>
+                            </div>
+                        `;
+                    });
+                }
+            } catch(e) {
+                console.error("Failed to fetch history", e);
+            }
+        }
+
+        async function submitWithdrawal() {
+            const btn = document.getElementById('withdraw-btn');
+            const tierVal = document.getElementById('withdraw-tier').value;
+            const [pointsStr, amountStr] = tierVal.split(',');
+            const points = parseInt(pointsStr);
+            const amount = parseInt(amountStr);
+
+            const accountNumber = document.getElementById('account-number').value.trim();
+            const accountName = document.getElementById('account-name').value.trim();
+
+            if (!accountNumber) {
+                alert("Please enter a valid Bank Account Number.");
+                return;
+            }
+
+            btn.disabled = true;
+            btn.innerText = "Processing...";
+
+            try {
+                const res = await fetch(`${API_URL}/withdraw`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        username: user.username,
+                        points,
+                        amount,
+                        accountNumber,
+                        accountName
+                    })
+                });
+
+                const data = await res.json();
+
+                if (res.ok) {
+                    alert("Withdrawal requested successfully!");
+                    document.getElementById('account-number').value = '';
+                    document.getElementById('account-name').value = '';
+                    fetchPoints();
+                    fetchHistory();
+                } else {
+                    alert(data.error || "Failed to request withdrawal.");
+                    btn.disabled = false;
+                    btn.innerText = "Request Withdrawal";
+                }
+            } catch(e) {
+                alert("Network error.");
+                btn.disabled = false;
+                btn.innerText = "Request Withdrawal";
+            }
+        }
+
         fetchPoints();
+        fetchHistory();
     </script>
 </body>
 </html>

@@ -45,7 +45,19 @@
             padding: 20px;
             box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
             overflow-x: auto;
+            margin-bottom: 20px;
         }
+
+        .btn-paid { background: #dcfce7; color: #15803d; }
+        .badge {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+        .badge-pending { background: #fef3c7; color: #d97706; }
+        .badge-paid { background: #dcfce7; color: #15803d; }
 
         table {
             width: 100%;
@@ -101,6 +113,7 @@
         </div>
 
         <div class="card">
+            <h3>Users</h3>
             <table>
                 <thead>
                     <tr>
@@ -112,6 +125,25 @@
                 </thead>
                 <tbody id="users-list">
                     <tr><td colspan="4">Loading users...</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="card">
+            <h3>Withdrawal Requests</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Username</th>
+                        <th>Details</th>
+                        <th>Amount</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="withdrawals-list">
+                    <tr><td colspan="6">Loading withdrawals...</td></tr>
                 </tbody>
             </table>
         </div>
@@ -192,8 +224,70 @@
             }
         }
 
+        async function loadWithdrawals() {
+            try {
+                const res = await fetch(`${API_URL}/admin/withdrawals`);
+                const withdrawals = await res.json();
+
+                const tbody = document.getElementById('withdrawals-list');
+                tbody.innerHTML = '';
+
+                if (withdrawals.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="6">No withdrawal requests found.</td></tr>';
+                    return;
+                }
+
+                withdrawals.forEach(w => {
+                    const tr = document.createElement('tr');
+                    const dateStr = new Date(w.timestamp).toLocaleString();
+                    const statusClass = w.status === 'paid' ? 'badge-paid' : 'badge-pending';
+
+                    tr.innerHTML = `
+                        <td><small>${dateStr}</small></td>
+                        <td><strong>${w.username}</strong></td>
+                        <td>
+                            <div><small>Acc: <strong>${w.accountNumber}</strong></small></div>
+                            ${w.accountName ? `<div><small>Name: ${w.accountName}</small></div>` : ''}
+                        </td>
+                        <td><strong>$${w.amount}</strong> <small>(${w.points} pts)</small></td>
+                        <td><span class="badge ${statusClass}">${w.status}</span></td>
+                        <td>
+                            ${w.status === 'pending' ?
+                                `<button class="action-btn btn-paid" onclick="markPaid('${w.id}')">Mark Paid</button>`
+                                : ''}
+                        </td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            } catch(e) {
+                document.getElementById('withdrawals-list').innerHTML = '<tr><td colspan="6" style="color:red;">Error loading withdrawals.</td></tr>';
+            }
+        }
+
+        async function markPaid(id) {
+            if (!confirm("Are you sure you want to mark this request as Paid?")) return;
+
+            try {
+                const res = await fetch(`${API_URL}/admin/withdrawal-action`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ id, action: 'paid' })
+                });
+
+                if (res.ok) {
+                    loadWithdrawals();
+                } else {
+                    const data = await res.json();
+                    alert(data.error || "Action failed");
+                }
+            } catch(e) {
+                alert("Network error.");
+            }
+        }
+
         // Initialize
         loadUsers();
+        loadWithdrawals();
     </script>
 </body>
 </html>
