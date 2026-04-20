@@ -148,7 +148,7 @@
 
     <script>
         const API_URL = "https://crimson-art-f482.lefa4082.workers.dev";
-        const AD_URL = "https://otieu.com/4/10205357"; // Kept the default ad link from previous code
+        const AD_URL = "https://otieu.com/4/10205357"; // direct URL ad
         const user = JSON.parse(localStorage.getItem('dtech_user'));
 
         if (!user || !user.username) {
@@ -201,7 +201,7 @@
                 alert("Network error. Point not added.");
             }
 
-            // Simple cooldown to prevent spamming
+            
             setTimeout(() => {
                 btn.disabled = false;
                 btn.innerText = "Watch Ad (+1 pt)";
