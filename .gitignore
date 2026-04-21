@@ -1,0 +1,7 @@
+android_sdk/
+cmdline-tools/
+*.zip
+android_app/build/
+android_app/.gradle/
+.gradle/
+local.properties

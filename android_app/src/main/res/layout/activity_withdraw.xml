@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="@color/bg"
+    android:padding="20dp">
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Cash Out"
+                android:textColor="@color/text_main"
+                android:textSize="24sp"
+                android:textStyle="bold"
+                android:layout_marginBottom="10dp" />
+
+            <TextView
+                android:id="@+id/balanceText"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Your Balance: 0 pts"
+                android:textColor="@color/success"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:layout_marginBottom="20dp" />
+
+            <Spinner
+                android:id="@+id/tierSpinner"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:backgroundTint="@color/border"
+                android:layout_marginBottom="15dp" />
+
+            <EditText
+                android:id="@+id/accountNumberInput"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="Bank Account Number"
+                android:textColor="@color/text_main"
+                android:textColorHint="@color/text_light"
+                android:backgroundTint="@color/border"
+                android:layout_marginBottom="15dp" />
+
+            <EditText
+                android:id="@+id/accountNameInput"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="Name / Initials (Optional)"
+                android:textColor="@color/text_main"
+                android:textColorHint="@color/text_light"
+                android:backgroundTint="@color/border"
+                android:layout_marginBottom="20dp" />
+
+            <Button
+                android:id="@+id/withdrawButton"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Request Withdrawal"
+                android:backgroundTint="@color/success"
+                android:textColor="@android:color/white"
+                android:layout_marginBottom="20dp" />
+
+        </LinearLayout>
+    </ScrollView>
+
+    <TextView
+        android:id="@+id/backButton"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="← Back to Dashboard"
+        android:textColor="@color/text_light"
+        android:gravity="center"
+        android:clickable="true"
+        android:layout_marginTop="10dp" />
+
+</LinearLayout>
