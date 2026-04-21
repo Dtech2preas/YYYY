@@ -1,0 +1,8 @@
+repos:
+-   repo: local
+    hooks:
+    -   id: check-gradle
+        name: Check Gradle Build
+        entry: bash -c "gradle assembleDebug"
+        language: system
+        pass_filenames: false
