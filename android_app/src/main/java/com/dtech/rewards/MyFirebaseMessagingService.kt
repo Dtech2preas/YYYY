@@ -19,7 +19,7 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
     }
 
     override fun onNewToken(token: String) {
-        // Here we could send the token to our server if we wanted to push to specific users
+        // Here we can send the token to our server if we wanted to push to specific users
     }
 
     private fun sendNotification(title: String?, messageBody: String?) {
