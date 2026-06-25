@@ -15,6 +15,7 @@
             --danger: #ef4444;
             --border: rgba(255, 255, 255, 0.1);
             --radius: 12px;
+            --primary: #3b82f6;
         }
 
         body {
@@ -30,7 +31,7 @@
 
         .container {
             width: 100%;
-            max-width: 400px;
+            max-width: 450px;
         }
 
         .card {
@@ -53,57 +54,39 @@
             line-height: 1.5;
         }
 
-        .req-box {
-            background: rgba(255, 255, 255, 0.05);
-            padding: 15px;
-            border-radius: 8px;
-            margin: 20px 0;
-            border: 1px dashed var(--border);
-        }
-
-        .req-box span {
-            font-weight: 800;
-            color: var(--text-main);
-            font-size: 1.2rem;
-        }
-
         .current-bal {
             margin-bottom: 20px;
             font-weight: 600;
+            font-size: 1.2rem;
         }
 
         .current-bal span {
             color: var(--success);
+            font-size: 1.5rem;
         }
 
-        button {
-            width: 100%;
-            padding: 15px;
-            background: var(--success);
-            color: white;
-            border: none;
+        .method-tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .method-tab {
+            flex: 1;
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border);
             border-radius: 8px;
-            font-weight: 700;
-            font-size: 1rem;
             cursor: pointer;
-        }
-
-        button:disabled {
-            background: #334155;
-            color: #94a3b8;
-            cursor: not-allowed;
-        }
-
-        .back-link {
+            font-weight: 600;
             color: var(--text-muted);
-            text-decoration: none;
-            font-size: 0.9rem;
-            display: inline-block;
-            margin-top: 20px;
+            transition: all 0.2s;
         }
 
-        .back-link:hover {
-            text-decoration: underline;
+        .method-tab.active {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
         }
 
         .form-group {
@@ -134,10 +117,42 @@
             color: var(--text-main);
         }
 
-        .form-note {
-            font-size: 0.8rem;
-            color: var(--danger);
-            margin-top: 5px;
+        button {
+            width: 100%;
+            padding: 15px;
+            background: var(--success);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-weight: 700;
+            font-size: 1rem;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+
+        button:disabled {
+            background: #334155;
+            color: #94a3b8;
+            cursor: not-allowed;
+        }
+
+        .back-link {
+            color: var(--text-muted);
+            text-decoration: none;
+            font-size: 0.9rem;
+            display: inline-block;
+            margin-top: 20px;
+        }
+
+        .back-link:hover {
+            text-decoration: underline;
+        }
+
+        .dynamic-fields {
+            display: none;
+        }
+
+        .dynamic-fields.active {
             display: block;
         }
 
@@ -163,17 +178,8 @@
             border-left: 3px solid var(--text-muted);
         }
 
-        .history-item.status-pending {
-            border-left-color: #f59e0b; /* Amber for pending */
-        }
-
-        .history-item.status-paid {
-            border-left-color: var(--success);
-        }
-
-        .history-item strong {
-            color: var(--text-main);
-        }
+        .history-item.status-pending { border-left-color: #f59e0b; }
+        .history-item.status-paid { border-left-color: var(--success); }
 
         .status-badge {
             float: right;
@@ -186,6 +192,15 @@
         .status-badge.pending { background: rgba(245, 158, 11, 0.2); color: #f59e0b; }
         .status-badge.paid { background: rgba(16, 185, 129, 0.2); color: var(--success); }
 
+        .method-info {
+            font-size: 0.85rem;
+            color: var(--primary);
+            margin-bottom: 15px;
+            padding: 10px;
+            background: rgba(59, 130, 246, 0.1);
+            border-radius: 6px;
+        }
+
     </style>
 </head>
 <body>
@@ -193,30 +208,72 @@
     <div class="container">
         <div class="card">
             <h1>Cash Out</h1>
-            <p>Exchange your hard-earned points for rewards directly to your bank account.</p>
+            <p>Exchange your hard-earned points for rewards!</p>
 
             <div class="current-bal">
-                Your Balance: <span id="withdraw-points">0</span> pts
+                Balance: <span id="withdraw-points">0</span> pts
             </div>
+
+            <div class="method-tabs">
+                <div class="method-tab active" onclick="setMethod('Airtime')">Airtime</div>
+                <div class="method-tab" onclick="setMethod('Voucher')">Voucher</div>
+                <div class="method-tab" onclick="setMethod('Capitec')">Capitec</div>
+            </div>
+
+            <div id="info-airtime" class="method-info">Minimum: 1000 Points</div>
+            <div id="info-voucher" class="method-info" style="display:none;">Minimum: 2000 Points</div>
+            <div id="info-capitec" class="method-info" style="display:none;">Minimum: 10000 Points</div>
 
             <div class="form-group">
                 <label for="withdraw-tier">Select Amount:</label>
-                <select id="withdraw-tier">
-                    <option value="1000,10">1000 Points = 10 USD</option>
-                    <option value="1500,15">1500 Points = 15 USD</option>
-                    <option value="2000,20">2000 Points = 20 USD</option>
+                <select id="withdraw-tier" onchange="checkEligibility()">
+                    <!-- Options populated via JS -->
                 </select>
             </div>
 
-            <div class="form-group">
-                <label for="account-number">Bank Account Number:</label>
-                <input type="text" id="account-number" placeholder="Enter exactly as shown" required>
-                <span class="form-note">Please ensure exact accuracy. Payment is sent to the account number provided.</span>
+            <!-- AIRTIME FIELDS -->
+            <div id="fields-Airtime" class="dynamic-fields active">
+                <div class="form-group">
+                    <label>Mobile Number:</label>
+                    <input type="tel" id="airtime-mobile" placeholder="e.g. 082 123 4567">
+                </div>
+                <div class="form-group">
+                    <label>Network Provider:</label>
+                    <select id="airtime-network">
+                        <option value="Vodacom">Vodacom</option>
+                        <option value="MTN">MTN</option>
+                        <option value="Cell C">Cell C</option>
+                        <option value="Telkom">Telkom</option>
+                    </select>
+                </div>
             </div>
 
-            <div class="form-group">
-                <label for="account-name">Name / Initials (Optional):</label>
-                <input type="text" id="account-name" placeholder="John D">
+            <!-- VOUCHER FIELDS -->
+            <div id="fields-Voucher" class="dynamic-fields">
+                <div class="form-group">
+                    <label>Mobile Number:</label>
+                    <input type="tel" id="voucher-mobile" placeholder="e.g. 082 123 4567">
+                </div>
+                <div class="form-group">
+                    <label>WhatsApp Number (Required):</label>
+                    <input type="tel" id="voucher-whatsapp" placeholder="For sending the voucher">
+                </div>
+                <div class="form-group">
+                    <label>Voucher Type:</label>
+                    <select id="voucher-type">
+                        <option value="1Voucher">1Voucher</option>
+                        <option value="Blu Voucher">Blu Voucher</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- CAPITEC FIELDS -->
+            <div id="fields-Capitec" class="dynamic-fields">
+                <div class="form-group">
+                    <label>Recipient Mobile Number:</label>
+                    <input type="tel" id="capitec-mobile" placeholder="e.g. 082 123 4567">
+                </div>
+                <p style="font-size:0.8rem; color:var(--text-muted); text-align:left; margin-top:-5px;">* Sent via Capitec Cash Transfer to this number.</p>
             </div>
 
             <button id="withdraw-btn" onclick="submitWithdrawal()" disabled>Request Withdrawal</button>
@@ -245,6 +302,61 @@
         }
 
         let currentPoints = 0;
+        let currentMethod = 'Airtime';
+
+        const TIERS = [
+            { pts: 1000, rand: 10 },
+            { pts: 1500, rand: 15 },
+            { pts: 2000, rand: 20 },
+            { pts: 2500, rand: 25 },
+            { pts: 3000, rand: 30 },
+            { pts: 4000, rand: 40 },
+            { pts: 5000, rand: 50 },
+            { pts: 10000, rand: 100 },
+            { pts: 15000, rand: 150 },
+            { pts: 20000, rand: 200 }
+        ];
+
+        const MINIMUMS = {
+            'Airtime': 1000,
+            'Voucher': 2000,
+            'Capitec': 10000
+        };
+
+        function setMethod(method) {
+            currentMethod = method;
+
+            // Tabs UI
+            document.querySelectorAll('.method-tab').forEach(t => t.classList.remove('active'));
+            event.target.classList.add('active');
+
+            // Fields UI
+            document.querySelectorAll('.dynamic-fields').forEach(f => f.classList.remove('active'));
+            document.getElementById('fields-' + method).classList.add('active');
+
+            // Info UI
+            document.querySelectorAll('.method-info').forEach(i => i.style.display = 'none');
+            document.getElementById('info-' + method.toLowerCase()).style.display = 'block';
+
+            populateTiers();
+            checkEligibility();
+        }
+
+        function populateTiers() {
+            const select = document.getElementById('withdraw-tier');
+            select.innerHTML = '';
+
+            const min = MINIMUMS[currentMethod];
+
+            TIERS.forEach(tier => {
+                if(tier.pts >= min) {
+                    const opt = document.createElement('option');
+                    opt.value = tier.pts + ',' + tier.rand;
+                    opt.innerText = `${tier.pts} Points = R${tier.rand}`;
+                    select.appendChild(opt);
+                }
+            });
+        }
 
         async function fetchPoints() {
             try {
@@ -264,18 +376,23 @@
         function checkEligibility() {
             const btn = document.getElementById('withdraw-btn');
             const tierVal = document.getElementById('withdraw-tier').value;
+
+            if(!tierVal) {
+                btn.disabled = true;
+                btn.innerText = "Select an amount";
+                return;
+            }
+
             const requiredPoints = parseInt(tierVal.split(',')[0]);
 
             if (currentPoints >= requiredPoints) {
                 btn.disabled = false;
-                btn.innerText = "Request Withdrawal";
+                btn.innerText = `Request R${tierVal.split(',')[1]} ${currentMethod}`;
             } else {
                 btn.disabled = true;
                 btn.innerText = "Not Enough Points";
             }
         }
-
-        document.getElementById('withdraw-tier').addEventListener('change', checkEligibility);
 
         async function fetchHistory() {
             try {
@@ -292,11 +409,18 @@
                     list.innerHTML = '';
                     data.sort((a, b) => b.timestamp - a.timestamp).forEach(w => {
                         const statusClass = w.status === 'paid' ? 'paid' : 'pending';
+
+                        let infoStr = '';
+                        if(w.method === 'Airtime') infoStr = `${w.details.network} - ${w.details.mobile}`;
+                        if(w.method === 'Voucher') infoStr = `${w.details.type} - WhatsApp: ${w.details.whatsapp}`;
+                        if(w.method === 'Capitec') infoStr = `Send to: ${w.details.mobile}`;
+
                         list.innerHTML += `
                             <div class="history-item status-${statusClass}">
                                 <span class="status-badge ${statusClass}">${w.status}</span>
-                                <strong>${w.points} Points</strong> for <strong>$${w.amount}</strong><br>
-                                <span style="color: var(--text-muted); font-size: 0.8rem;">Acc: ${w.accountNumber}</span>
+                                <strong>R${w.amount}</strong> via ${w.method}<br>
+                                <span style="color: var(--text-muted); font-size: 0.8rem;">${infoStr}</span><br>
+                                <span style="color: var(--text-muted); font-size: 0.75rem;">Cost: ${w.points} pts</span>
                             </div>
                         `;
                     });
@@ -313,12 +437,26 @@
             const points = parseInt(pointsStr);
             const amount = parseInt(amountStr);
 
-            const accountNumber = document.getElementById('account-number').value.trim();
-            const accountName = document.getElementById('account-name').value.trim();
+            let details = {};
 
-            if (!accountNumber) {
-                alert("Please enter a valid Bank Account Number.");
-                return;
+            if (currentMethod === 'Airtime') {
+                const mob = document.getElementById('airtime-mobile').value.trim();
+                const net = document.getElementById('airtime-network').value;
+                if(!mob) return alert("Please enter mobile number.");
+                details = { mobile: mob, network: net };
+            }
+            else if (currentMethod === 'Voucher') {
+                const mob = document.getElementById('voucher-mobile').value.trim();
+                const wa = document.getElementById('voucher-whatsapp').value.trim();
+                const type = document.getElementById('voucher-type').value;
+                if(!mob) return alert("Please enter mobile number.");
+                if(!wa) return alert("Please enter WhatsApp number for voucher delivery.");
+                details = { mobile: mob, whatsapp: wa, type: type };
+            }
+            else if (currentMethod === 'Capitec') {
+                const mob = document.getElementById('capitec-mobile').value.trim();
+                if(!mob) return alert("Please enter recipient mobile number.");
+                details = { mobile: mob };
             }
 
             btn.disabled = true;
@@ -330,10 +468,11 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         username: user.username,
-                        points,
-                        amount,
-                        accountNumber,
-                        accountName
+                        token: user.token,
+                        points: points,
+                        amount: amount,
+                        method: currentMethod,
+                        details: details
                     })
                 });
 
@@ -341,22 +480,21 @@
 
                 if (res.ok) {
                     alert("Withdrawal requested successfully!");
-                    document.getElementById('account-number').value = '';
-                    document.getElementById('account-name').value = '';
+                    // Clear inputs
+                    document.querySelectorAll('input').forEach(i => i.value = '');
                     fetchPoints();
                     fetchHistory();
                 } else {
                     alert(data.error || "Failed to request withdrawal.");
-                    btn.disabled = false;
-                    btn.innerText = "Request Withdrawal";
+                    checkEligibility();
                 }
             } catch(e) {
                 alert("Network error.");
-                btn.disabled = false;
-                btn.innerText = "Request Withdrawal";
+                checkEligibility();
             }
         }
 
+        populateTiers();
         fetchPoints();
         fetchHistory();
     </script>

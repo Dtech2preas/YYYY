@@ -27,7 +27,7 @@
         }
 
         .container {
-            max-width: 800px;
+            max-width: 1000px;
             margin: 0 auto;
         }
 
@@ -58,6 +58,15 @@
         }
         .badge-pending { background: #fef3c7; color: #d97706; }
         .badge-paid { background: #dcfce7; color: #15803d; }
+
+        .method-badge {
+            background: #e0f2fe;
+            color: #0369a1;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: bold;
+        }
 
         table {
             width: 100%;
@@ -102,6 +111,18 @@
             text-decoration: none;
             font-weight: 600;
         }
+
+        .details-box {
+            font-size: 0.85rem;
+            background: #f8fafc;
+            padding: 8px;
+            border-radius: 4px;
+            border: 1px solid #e2e8f0;
+            margin-top: 4px;
+        }
+        .details-box strong {
+            color: #334155;
+        }
     </style>
 </head>
 <body>
@@ -110,6 +131,26 @@
         <div class="header">
             <h2>Admin Console</h2>
             <a href="dashboard.html" class="back-link">Back to App</a>
+        </div>
+
+        <div class="card">
+            <h3>Withdrawal Requests</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>User</th>
+                        <th>Amount</th>
+                        <th>Method</th>
+                        <th>Fulfillment Details</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="withdrawals-list">
+                    <tr><td colspan="7">Loading withdrawals...</td></tr>
+                </tbody>
+            </table>
         </div>
 
         <div class="card">
@@ -125,25 +166,6 @@
                 </thead>
                 <tbody id="users-list">
                     <tr><td colspan="4">Loading users...</td></tr>
-                </tbody>
-            </table>
-        </div>
-
-        <div class="card">
-            <h3>Withdrawal Requests</h3>
-            <table>
-                <thead>
-                    <tr>
-                        <th>Date</th>
-                        <th>Username</th>
-                        <th>Details</th>
-                        <th>Amount</th>
-                        <th>Status</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody id="withdrawals-list">
-                    <tr><td colspan="6">Loading withdrawals...</td></tr>
                 </tbody>
             </table>
         </div>
@@ -171,7 +193,7 @@
 
                     tr.innerHTML = `
                         <td><strong>${user.username}</strong></td>
-                        <td>${user.points}</td>
+                        <td>${user.points} pts</td>
                         <td>
                             ${user.is_banned ? '<span style="color:#ef4444; font-weight:bold;">Banned</span>' : '<span style="color:#10b981;">Active</span>'}
                         </td>
@@ -214,7 +236,7 @@
                 });
 
                 if (res.ok) {
-                    loadUsers(); // refresh table
+                    loadUsers();
                 } else {
                     const data = await res.json();
                     alert(data.error || "Action failed");
@@ -233,7 +255,7 @@
                 tbody.innerHTML = '';
 
                 if (withdrawals.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="6">No withdrawal requests found.</td></tr>';
+                    tbody.innerHTML = '<tr><td colspan="7">No withdrawal requests found.</td></tr>';
                     return;
                 }
 
@@ -241,15 +263,37 @@
                     const tr = document.createElement('tr');
                     const dateStr = new Date(w.timestamp).toLocaleString();
                     const statusClass = w.status === 'paid' ? 'badge-paid' : 'badge-pending';
+                    const method = w.method || 'Legacy';
+                    const details = w.details || {};
+
+                    let detailsHtml = '';
+                    if (method === 'Airtime') {
+                        detailsHtml = `
+                            <div><strong>Network:</strong> ${details.network}</div>
+                            <div><strong>Mobile:</strong> ${details.mobile}</div>
+                        `;
+                    } else if (method === 'Voucher') {
+                        detailsHtml = `
+                            <div><strong>Type:</strong> ${details.type}</div>
+                            <div><strong>WhatsApp:</strong> ${details.whatsapp}</div>
+                            ${details.mobile ? `<div><strong>Mobile:</strong> ${details.mobile}</div>` : ''}
+                        `;
+                    } else if (method === 'Capitec') {
+                        detailsHtml = `
+                            <div><strong>Send to Mobile:</strong> ${details.mobile}</div>
+                        `;
+                    }
 
                     tr.innerHTML = `
                         <td><small>${dateStr}</small></td>
                         <td><strong>${w.username}</strong></td>
+                        <td><strong>R${w.amount}</strong> <br><small>(${w.points} pts)</small></td>
+                        <td><span class="method-badge">${method}</span></td>
                         <td>
-                            <div><small>Acc: <strong>${w.accountNumber}</strong></small></div>
-                            ${w.accountName ? `<div><small>Name: ${w.accountName}</small></div>` : ''}
+                            <div class="details-box">
+                                ${detailsHtml}
+                            </div>
                         </td>
-                        <td><strong>$${w.amount}</strong> <small>(${w.points} pts)</small></td>
                         <td><span class="badge ${statusClass}">${w.status}</span></td>
                         <td>
                             ${w.status === 'pending' ?
@@ -260,7 +304,7 @@
                     tbody.appendChild(tr);
                 });
             } catch(e) {
-                document.getElementById('withdrawals-list').innerHTML = '<tr><td colspan="6" style="color:red;">Error loading withdrawals.</td></tr>';
+                document.getElementById('withdrawals-list').innerHTML = '<tr><td colspan="7" style="color:red;">Error loading withdrawals.</td></tr>';
             }
         }
 
@@ -285,7 +329,6 @@
             }
         }
 
-        // Initialize
         loadUsers();
         loadWithdrawals();
     </script>

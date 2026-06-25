@@ -135,7 +135,7 @@
 
         <div class="ad-card">
             <h2>Watch Ad</h2>
-            <p>Click below to open an ad. You will instantly receive 1 point.</p>
+            <p>Click below to open an ad. You will instantly receive between 1 and 30 points.</p>
 
             <button id="watch-btn" class="watch-btn" onclick="watchAd()">Watch Ad (+1 pt)</button>
         </div>
@@ -171,7 +171,7 @@
                     const res = await fetch(`${API_URL}/add-point`, {
                         method: 'POST',
                         headers: {'Content-Type': 'application/json'},
-                        body: JSON.stringify({username: user.username})
+                        body: JSON.stringify({username: user.username, token: user.token})
                     });
                     if (res.ok) {
                         currentPending--;
@@ -223,13 +223,13 @@
                 const res = await fetch(`${API_URL}/add-point`, {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({username: user.username})
+                    body: JSON.stringify({username: user.username, token: user.token})
                 });
                 const data = await res.json();
 
                 if (res.ok) {
                     document.getElementById('points-display').innerText = data.points;
-                    showToast('+1 Point Added!');
+                    showToast('+' + data.added + ' Points Added!');
                 } else {
                     alert(data.error || "Failed to add point");
                 }

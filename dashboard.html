@@ -176,7 +176,7 @@
                     const res = await fetch(`${API_URL}/add-point`, {
                         method: 'POST',
                         headers: {'Content-Type': 'application/json'},
-                        body: JSON.stringify({username: user.username})
+                        body: JSON.stringify({username: user.username, token: user.token})
                     });
                     if (res.ok) {
                         currentPending--;
