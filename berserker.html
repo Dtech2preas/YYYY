@@ -156,12 +156,47 @@
             window.location.href = 'index.html';
         }
 
+        function getPendingPoints() {
+            const match = document.cookie.match(/(?:^|; )pending_navigation_points=([^;]*)/);
+            return match ? parseInt(match[1]) || 0 : 0;
+        }
+
+        async function syncPendingPoints(pendingPoints) {
+            if (pendingPoints <= 0) return;
+
+            try {
+                // Call add-point API repeatedly for each pending point to match existing API behavior
+                let currentPending = pendingPoints;
+                for (let i = 0; i < pendingPoints; i++) {
+                    const res = await fetch(`${API_URL}/add-point`, {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({username: user.username})
+                    });
+                    if (res.ok) {
+                        currentPending--;
+                        document.cookie = `pending_navigation_points=${currentPending}; path=/; max-age=31536000`;
+                    } else {
+                        break;
+                    }
+                }
+            } catch(e) {
+                console.error("Failed to sync pending points", e);
+            }
+        }
+
         async function updatePointsDisplay() {
             try {
+                const pendingPoints = getPendingPoints();
+                if (pendingPoints > 0) {
+                    await syncPendingPoints(pendingPoints);
+                }
+
                 const res = await fetch(`${API_URL}/user?username=${encodeURIComponent(user.username)}`);
                 const data = await res.json();
                 if (res.ok) {
-                    document.getElementById('points-display').innerText = data.points;
+                    const remainingPending = getPendingPoints();
+                    document.getElementById('points-display').innerText = data.points + remainingPending;
                 }
             } catch(e) {
                 console.error("Failed to sync points", e);

@@ -8,6 +8,8 @@ import android.os.Bundle
 import android.os.Message
 import android.util.Log
 import android.view.ViewGroup
+import android.content.Context
+import android.content.SharedPreferences
 import android.webkit.*
 import android.widget.FrameLayout
 import androidx.appcompat.app.AppCompatActivity
@@ -18,6 +20,13 @@ class MainActivity : AppCompatActivity() {
     private lateinit var webViewContainer: FrameLayout
     private val popups = mutableListOf<WebView>()
 
+    private lateinit var prefs: SharedPreferences
+    private var isExternalSessionActive = false
+    private var lastInternalPageWasBerserker = false
+
+    private val PREFS_NAME = "DTechPrefs"
+    private val KEY_PENDING_POINTS = "pendingNavigationPoints"
+
     @SuppressLint("SetJavaScriptEnabled")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -26,9 +35,47 @@ class MainActivity : AppCompatActivity() {
         webViewContainer = findViewById(R.id.webViewContainer)
         mainWebView = findViewById(R.id.webView)
 
+        prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+
         setupWebView(mainWebView)
+        updateCookie()
 
         mainWebView.loadUrl("https://revenue.dtech-services.co.za")
+    }
+
+    private fun addPendingPoint() {
+        val currentPoints = prefs.getInt(KEY_PENDING_POINTS, 0)
+        prefs.edit().putInt(KEY_PENDING_POINTS, currentPoints + 1).apply()
+        updateCookie()
+    }
+
+    private fun updateCookie() {
+        val currentPoints = prefs.getInt(KEY_PENDING_POINTS, 0)
+        val cookieManager = CookieManager.getInstance()
+        cookieManager.setCookie("https://revenue.dtech-services.co.za", "pending_navigation_points=$currentPoints; path=/; max-age=31536000")
+        cookieManager.flush()
+    }
+
+    private fun syncPointsFromCookie() {
+        val cookieManager = CookieManager.getInstance()
+        val cookies = cookieManager.getCookie("https://revenue.dtech-services.co.za")
+        if (cookies != null) {
+            val parts = cookies.split(";")
+            for (part in parts) {
+                val keyValue = part.trim().split("=")
+                if (keyValue.size == 2 && keyValue[0] == "pending_navigation_points") {
+                    try {
+                        val cookiePoints = keyValue[1].toInt()
+                        val currentPrefsPoints = prefs.getInt(KEY_PENDING_POINTS, 0)
+                        if (cookiePoints < currentPrefsPoints && cookiePoints >= 0) {
+                            prefs.edit().putInt(KEY_PENDING_POINTS, cookiePoints).apply()
+                        }
+                    } catch (e: Exception) {
+                        Log.e("MainActivity", "Error parsing cookie points", e)
+                    }
+                }
+            }
+        }
     }
 
     @SuppressLint("SetJavaScriptEnabled")
@@ -51,7 +98,35 @@ class MainActivity : AppCompatActivity() {
         webView.webChromeClient = MyWebChromeClient()
     }
 
+    private fun isInternalDomain(url: String): Boolean {
+        try {
+            val uri = Uri.parse(url)
+            val host = uri.host ?: return false
+            return host == "revenue.dtech-services.co.za" || host.endsWith(".dtech-services.co.za")
+        } catch (e: Exception) {
+            return false
+        }
+    }
+
     private inner class MyWebViewClient : WebViewClient() {
+        override fun onPageStarted(view: WebView?, url: String?, favicon: android.graphics.Bitmap?) {
+            super.onPageStarted(view, url, favicon)
+            url?.let {
+                Log.d("WebViewClient", "onPageStarted: $it")
+                syncPointsFromCookie()
+
+                if (isInternalDomain(it)) {
+                    isExternalSessionActive = false
+                    lastInternalPageWasBerserker = it.contains("berserker.html")
+                } else {
+                    if (lastInternalPageWasBerserker && !isExternalSessionActive) {
+                        isExternalSessionActive = true
+                        addPendingPoint()
+                    }
+                }
+            }
+        }
+
         override fun shouldOverrideUrlLoading(view: WebView?, request: WebResourceRequest?): Boolean {
             val url = request?.url?.toString() ?: return false
             Log.d("WebViewClient", "Loading URL: $url")
@@ -126,6 +201,8 @@ class MainActivity : AppCompatActivity() {
             super.onCloseWindow(window)
             if (window != null) {
                 closePopup(window)
+                // When popup is closed, user returns to main webview, session is over.
+                isExternalSessionActive = false
             }
         }
     }

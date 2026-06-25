@@ -161,13 +161,50 @@
 
         document.getElementById('username-display').innerText = user.username;
 
+        function getPendingPoints() {
+            const match = document.cookie.match(/(?:^|; )pending_navigation_points=([^;]*)/);
+            return match ? parseInt(match[1]) || 0 : 0;
+        }
+
+        async function syncPendingPoints(pendingPoints) {
+            if (pendingPoints <= 0) return;
+
+            try {
+                // Call add-point API repeatedly for each pending point to match existing API behavior
+                let currentPending = pendingPoints;
+                for (let i = 0; i < pendingPoints; i++) {
+                    const res = await fetch(`${API_URL}/add-point`, {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({username: user.username})
+                    });
+                    if (res.ok) {
+                        currentPending--;
+                        document.cookie = `pending_navigation_points=${currentPending}; path=/; max-age=31536000`;
+                    } else {
+                        break;
+                    }
+                }
+            } catch(e) {
+                console.error("Failed to sync pending points", e);
+            }
+        }
+
         async function fetchPoints() {
             try {
+                const pendingPoints = getPendingPoints();
+                if (pendingPoints > 0) {
+                    await syncPendingPoints(pendingPoints);
+                }
+
                 const res = await fetch(`${API_URL}/user?username=${encodeURIComponent(user.username)}`);
                 const data = await res.json();
 
                 if (res.ok) {
-                    document.getElementById('points-display').innerText = data.points;
+                    // If sync failed partially, we still display pending points that haven't been synced (or might have been just synced)
+                    // We'll read the cookie again in case it was reset to 0 by successful sync
+                    const remainingPending = getPendingPoints();
+                    document.getElementById('points-display').innerText = data.points + remainingPending;
                 } else if (res.status === 403) {
                     alert('Your account is banned.');
                     logout();
