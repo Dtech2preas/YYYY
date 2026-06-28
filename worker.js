@@ -172,7 +172,7 @@ async function handleGetUser(request, env) {
 }
 
 async function handleAddPoint(request, env) {
-  const { username, token } = await request.json();
+  const { username, token, count = 1 } = await request.json();
 
   if (!username) return new Response(JSON.stringify({ error: 'Missing username' }), { status: 400, headers: getCorsHeaders(request) });
 
@@ -185,7 +185,11 @@ async function handleAddPoint(request, env) {
   if (user.token !== token) return new Response(JSON.stringify({ error: 'Invalid token' }), { status: 403, headers: getCorsHeaders(request) });
 
   // Random 1 to 30 points
-  const pointsToAdd = Math.floor(Math.random() * 30) + 1;
+  let pointsToAdd = 0;
+  const loopCount = Math.max(1, Math.min(count, 100)); // cap at 100 per request just in case
+  for (let i = 0; i < loopCount; i++) {
+      pointsToAdd += Math.floor(Math.random() * 30) + 1;
+  }
 
   if(user.points === undefined) user.points = 0;
   user.points += pointsToAdd;
@@ -203,8 +207,17 @@ async function handleWithdraw(request, env) {
   const data = await request.json();
   const { username, token, points, amount, method, details } = data;
 
-  if (!username || !points || !amount || !method) {
-      return new Response(JSON.stringify({ error: 'Missing required fields' }), { status: 400, headers: getCorsHeaders(request) });
+  const missing = [];
+  if (!username) missing.push('username');
+  if (!points || isNaN(points)) missing.push('points');
+  if (!amount || isNaN(amount)) missing.push('amount');
+  if (!method) missing.push('method');
+  if (method === 'Airtime' && (!details || !details.mobile || !details.network)) missing.push('details.mobile or details.network');
+  if (method === 'Voucher' && (!details || !details.mobile || !details.whatsapp || !details.type)) missing.push('details for voucher');
+  if (method === 'Capitec' && (!details || !details.mobile)) missing.push('details.mobile');
+
+  if (missing.length > 0) {
+      return new Response(JSON.stringify({ error: `Missing required fields: ${missing.join(', ')}` }), { status: 400, headers: getCorsHeaders(request) });
   }
 
   const userJson = await env.USERS.get(username);

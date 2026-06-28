@@ -5,3 +5,6 @@ android_app/build/
 android_app/.gradle/
 .gradle/
 local.properties
+node_modules/
+package-lock.json
+package.json
