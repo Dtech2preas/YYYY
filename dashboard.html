@@ -161,49 +161,59 @@
 
         document.getElementById('username-display').innerText = user.username;
 
-        function getPendingPoints() {
+        function getPendingAdWatches() {
             const match = document.cookie.match(/(?:^|; )pending_navigation_points=([^;]*)/);
             return match ? parseInt(match[1]) || 0 : 0;
         }
 
-        async function syncPendingPoints(pendingPoints) {
-            if (pendingPoints <= 0) return;
+        async function syncPointsLocallyAndServer() {
+            // 1. Check for ad watches from Android external navigation
+            const pendingAdWatches = getPendingAdWatches();
+            let accumulatedLocalPoints = parseInt(localStorage.getItem('dtech_pending_points')) || 0;
 
-            try {
-                // Call add-point API once with the pending points count to avoid DB race conditions
-                const res = await fetch(`${API_URL}/add-point`, {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({
-                        username: user.username,
-                        token: user.token,
-                        count: pendingPoints
-                    })
-                });
-
-                if (res.ok) {
-                    document.cookie = `pending_navigation_points=0; path=/; max-age=31536000`;
+            if (pendingAdWatches > 0) {
+                // Generate random points for each ad watched
+                for (let i = 0; i < pendingAdWatches; i++) {
+                    accumulatedLocalPoints += Math.floor(Math.random() * 30) + 1;
                 }
-            } catch(e) {
-                console.error("Failed to sync pending points", e);
+
+                // Save to local storage
+                localStorage.setItem('dtech_pending_points', accumulatedLocalPoints);
+
+                // Reset cookie so we don't process them again
+                document.cookie = `pending_navigation_points=0; path=/; max-age=31536000`;
             }
-        }
 
-        async function fetchPoints() {
-            try {
-                const pendingPoints = getPendingPoints();
-                if (pendingPoints > 0) {
-                    await syncPendingPoints(pendingPoints);
+            // 2. Sync accumulated points to server
+            if (accumulatedLocalPoints > 0) {
+                try {
+                    const res = await fetch(`${API_URL}/sync-points`, {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({
+                            username: user.username,
+                            token: user.token,
+                            points: accumulatedLocalPoints
+                        })
+                    });
+
+                    if (res.ok) {
+                        localStorage.setItem('dtech_pending_points', 0);
+                        accumulatedLocalPoints = 0;
+                    }
+                } catch(e) {
+                    console.error("Failed to sync points to server", e);
                 }
+            }
 
+            // 3. Fetch current accurate balance
+            try {
                 const res = await fetch(`${API_URL}/user?username=${encodeURIComponent(user.username)}`);
                 const data = await res.json();
 
                 if (res.ok) {
-                    // If sync failed partially, we still display pending points that haven't been synced (or might have been just synced)
-                    // We'll read the cookie again in case it was reset to 0 by successful sync
-                    const remainingPending = getPendingPoints();
-                    document.getElementById('points-display').innerText = data.points + remainingPending;
+                    // Display balance + any points that failed to sync
+                    document.getElementById('points-display').innerText = data.points + accumulatedLocalPoints;
                 } else if (res.status === 403) {
                     alert('Your account is banned.');
                     logout();
@@ -218,7 +228,7 @@
             window.location.href = 'index.html';
         }
 
-        fetchPoints();
+        syncPointsLocallyAndServer();
     </script>
 </body>
 </html>

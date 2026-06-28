@@ -94,6 +94,10 @@ class MainActivity : AppCompatActivity() {
         cookieManager.setAcceptCookie(true)
         cookieManager.setAcceptThirdPartyCookies(webView, true)
 
+        // Add App Secret to User-Agent for backend verification
+        val originalUserAgent = webSettings.userAgentString
+        webSettings.userAgentString = "$originalUserAgent DTechApp-Secret-9f8d7b6a"
+
         webView.webViewClient = MyWebViewClient()
         webView.webChromeClient = MyWebChromeClient()
     }
