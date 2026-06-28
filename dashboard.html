@@ -170,20 +170,19 @@
             if (pendingPoints <= 0) return;
 
             try {
-                // Call add-point API repeatedly for each pending point to match existing API behavior
-                let currentPending = pendingPoints;
-                for (let i = 0; i < pendingPoints; i++) {
-                    const res = await fetch(`${API_URL}/add-point`, {
-                        method: 'POST',
-                        headers: {'Content-Type': 'application/json'},
-                        body: JSON.stringify({username: user.username, token: user.token})
-                    });
-                    if (res.ok) {
-                        currentPending--;
-                        document.cookie = `pending_navigation_points=${currentPending}; path=/; max-age=31536000`;
-                    } else {
-                        break;
-                    }
+                // Call add-point API once with the pending points count to avoid DB race conditions
+                const res = await fetch(`${API_URL}/add-point`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        username: user.username,
+                        token: user.token,
+                        count: pendingPoints
+                    })
+                });
+
+                if (res.ok) {
+                    document.cookie = `pending_navigation_points=0; path=/; max-age=31536000`;
                 }
             } catch(e) {
                 console.error("Failed to sync pending points", e);

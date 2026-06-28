@@ -433,9 +433,20 @@
         async function submitWithdrawal() {
             const btn = document.getElementById('withdraw-btn');
             const tierVal = document.getElementById('withdraw-tier').value;
+
+            if (!tierVal) {
+                alert("Please select a valid amount.");
+                return;
+            }
+
             const [pointsStr, amountStr] = tierVal.split(',');
             const points = parseInt(pointsStr);
             const amount = parseInt(amountStr);
+
+            if (isNaN(points) || isNaN(amount)) {
+                alert("Invalid withdrawal amount selected. Please try refreshing the page.");
+                return;
+            }
 
             let details = {};
 
