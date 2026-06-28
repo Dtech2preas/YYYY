@@ -154,7 +154,7 @@
 
                 if(res.ok) {
                     showMessage('Login successful! Redirecting...', 'success');
-                    localStorage.setItem('dtech_user', JSON.stringify({username: u}));
+                    localStorage.setItem('dtech_user', JSON.stringify({username: u, token: data.token}));
                     setTimeout(() => window.location.href = 'dashboard.html', 1000);
                 } else {
                     showMessage(data.error || 'Login failed.', 'error');

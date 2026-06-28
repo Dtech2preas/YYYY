@@ -207,7 +207,7 @@ async function handleWithdraw(request, env) {
   const data = await request.json();
   const { username, token, points, amount, method, details } = data;
 
-  if (!username || !points || isNaN(points) || !amount || isNaN(amount) || !method || !details) {
+  if (!username || !token || !points || isNaN(points) || !amount || isNaN(amount) || !method || !details) {
       return new Response(JSON.stringify({ error: `Missing required fields` }), { status: 400, headers: getCorsHeaders(request) });
   }
 
