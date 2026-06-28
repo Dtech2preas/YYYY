@@ -215,9 +215,9 @@
             </div>
 
             <div class="method-tabs">
-                <div class="method-tab active" onclick="setMethod('Airtime')">Airtime</div>
-                <div class="method-tab" onclick="setMethod('Voucher')">Voucher</div>
-                <div class="method-tab" onclick="setMethod('Capitec')">Capitec</div>
+                <div class="method-tab active" onclick="setMethod('Airtime', this)">Airtime</div>
+                <div class="method-tab" onclick="setMethod('Voucher', this)">Voucher</div>
+                <div class="method-tab" onclick="setMethod('Capitec', this)">Capitec</div>
             </div>
 
             <div id="info-airtime" class="method-info">Minimum: 1000 Points</div>
@@ -323,12 +323,16 @@
             'Capitec': 10000
         };
 
-        function setMethod(method) {
+        function setMethod(method, eventElement) {
             currentMethod = method;
 
             // Tabs UI
             document.querySelectorAll('.method-tab').forEach(t => t.classList.remove('active'));
-            event.target.classList.add('active');
+            if (eventElement) {
+                eventElement.classList.add('active');
+            } else {
+                document.querySelector(`.method-tab[onclick*="${method}"]`).classList.add('active');
+            }
 
             // Fields UI
             document.querySelectorAll('.dynamic-fields').forEach(f => f.classList.remove('active'));

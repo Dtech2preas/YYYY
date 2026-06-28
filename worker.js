@@ -36,8 +36,8 @@ export default {
         return await handleRegister(request, env);
       } else if (path === '/login' && request.method === 'POST') {
         return await handleLogin(request, env);
-      } else if (path === '/add-point' && request.method === 'POST') {
-        return await handleAddPoint(request, env);
+      } else if (path === '/sync-points' && request.method === 'POST') {
+        return await handleSyncPoints(request, env);
       } else if (path === '/user' && request.method === 'GET') {
         return await handleGetUser(request, env);
       } else if (path === '/withdraw' && request.method === 'POST') {
@@ -171,10 +171,17 @@ async function handleGetUser(request, env) {
   }), { status: 200, headers: getCorsHeaders(request) });
 }
 
-async function handleAddPoint(request, env) {
-  const { username, token, count = 1 } = await request.json();
+async function handleSyncPoints(request, env) {
+  // Check App Secret User-Agent
+  const userAgent = request.headers.get('User-Agent') || '';
+  if (!userAgent.includes('DTechApp-Secret-9f8d7b6a')) {
+      return new Response(JSON.stringify({ error: 'Unauthorized request origin' }), { status: 403, headers: getCorsHeaders(request) });
+  }
+
+  const { username, token, points } = await request.json();
 
   if (!username) return new Response(JSON.stringify({ error: 'Missing username' }), { status: 400, headers: getCorsHeaders(request) });
+  if (!points || isNaN(points) || points <= 0) return new Response(JSON.stringify({ error: 'Invalid points' }), { status: 400, headers: getCorsHeaders(request) });
 
   const userJson = await env.USERS.get(username);
   if (!userJson) return new Response(JSON.stringify({ error: 'User not found' }), { status: 404, headers: getCorsHeaders(request) });
@@ -184,22 +191,15 @@ async function handleAddPoint(request, env) {
   if (user.is_banned) return new Response(JSON.stringify({ error: 'Account banned' }), { status: 403, headers: getCorsHeaders(request) });
   if (user.token !== token) return new Response(JSON.stringify({ error: 'Invalid token' }), { status: 403, headers: getCorsHeaders(request) });
 
-  // Random 1 to 30 points
-  let pointsToAdd = 0;
-  const loopCount = Math.max(1, Math.min(count, 100)); // cap at 100 per request just in case
-  for (let i = 0; i < loopCount; i++) {
-      pointsToAdd += Math.floor(Math.random() * 30) + 1;
-  }
-
   if(user.points === undefined) user.points = 0;
-  user.points += pointsToAdd;
+  user.points += parseInt(points);
 
   await env.USERS.put(username, JSON.stringify(user));
 
   return new Response(JSON.stringify({
-      message: 'Points added',
+      message: 'Points synced successfully',
       points: user.points,
-      added: pointsToAdd
+      added: points
   }), { status: 200, headers: getCorsHeaders(request) });
 }
 
@@ -207,17 +207,8 @@ async function handleWithdraw(request, env) {
   const data = await request.json();
   const { username, token, points, amount, method, details } = data;
 
-  const missing = [];
-  if (!username) missing.push('username');
-  if (!points || isNaN(points)) missing.push('points');
-  if (!amount || isNaN(amount)) missing.push('amount');
-  if (!method) missing.push('method');
-  if (method === 'Airtime' && (!details || !details.mobile || !details.network)) missing.push('details.mobile or details.network');
-  if (method === 'Voucher' && (!details || !details.mobile || !details.whatsapp || !details.type)) missing.push('details for voucher');
-  if (method === 'Capitec' && (!details || !details.mobile)) missing.push('details.mobile');
-
-  if (missing.length > 0) {
-      return new Response(JSON.stringify({ error: `Missing required fields: ${missing.join(', ')}` }), { status: 400, headers: getCorsHeaders(request) });
+  if (!username || !points || isNaN(points) || !amount || isNaN(amount) || !method || !details) {
+      return new Response(JSON.stringify({ error: `Missing required fields` }), { status: 400, headers: getCorsHeaders(request) });
   }
 
   const userJson = await env.USERS.get(username);
@@ -246,7 +237,7 @@ async function handleWithdraw(request, env) {
       points: points,
       amount: amount,
       method: method,
-      details: details || {},
+      details: details, // Saving simplified details payload straight from frontend
       status: 'pending',
       timestamp: Date.now()
   };

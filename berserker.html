@@ -156,50 +156,19 @@
             window.location.href = 'index.html';
         }
 
-        function getPendingPoints() {
-            const match = document.cookie.match(/(?:^|; )pending_navigation_points=([^;]*)/);
-            return match ? parseInt(match[1]) || 0 : 0;
-        }
-
-        async function syncPendingPoints(pendingPoints) {
-            if (pendingPoints <= 0) return;
-
-            try {
-                // Call add-point API repeatedly for each pending point to match existing API behavior
-                let currentPending = pendingPoints;
-                for (let i = 0; i < pendingPoints; i++) {
-                    const res = await fetch(`${API_URL}/add-point`, {
-                        method: 'POST',
-                        headers: {'Content-Type': 'application/json'},
-                        body: JSON.stringify({username: user.username, token: user.token})
-                    });
-                    if (res.ok) {
-                        currentPending--;
-                        document.cookie = `pending_navigation_points=${currentPending}; path=/; max-age=31536000`;
-                    } else {
-                        break;
-                    }
-                }
-            } catch(e) {
-                console.error("Failed to sync pending points", e);
-            }
-        }
+        let basePoints = 0;
 
         async function updatePointsDisplay() {
             try {
-                const pendingPoints = getPendingPoints();
-                if (pendingPoints > 0) {
-                    await syncPendingPoints(pendingPoints);
-                }
-
                 const res = await fetch(`${API_URL}/user?username=${encodeURIComponent(user.username)}`);
-                const data = await res.json();
                 if (res.ok) {
-                    const remainingPending = getPendingPoints();
-                    document.getElementById('points-display').innerText = data.points + remainingPending;
+                    const data = await res.json();
+                    basePoints = data.points;
+                    const localPending = parseInt(localStorage.getItem('dtech_pending_points')) || 0;
+                    document.getElementById('points-display').innerText = basePoints + localPending;
                 }
             } catch(e) {
-                console.error("Failed to sync points", e);
+                console.error("Failed to fetch user points", e);
             }
         }
 
@@ -210,7 +179,7 @@
             setTimeout(() => t.style.opacity = 0, 3000);
         }
 
-        async function watchAd() {
+        function watchAd() {
             const btn = document.getElementById('watch-btn');
             btn.disabled = true;
             btn.innerText = "Processing...";
@@ -218,26 +187,16 @@
             // Open the Ad
             window.open(AD_URL, '_blank');
 
-            // Add the point
-            try {
-                const res = await fetch(`${API_URL}/add-point`, {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({username: user.username, token: user.token})
-                });
-                const data = await res.json();
+            // Add the point locally
+            const pointsToAdd = Math.floor(Math.random() * 30) + 1;
+            let currentLocal = parseInt(localStorage.getItem('dtech_pending_points')) || 0;
+            currentLocal += pointsToAdd;
+            localStorage.setItem('dtech_pending_points', currentLocal);
 
-                if (res.ok) {
-                    document.getElementById('points-display').innerText = data.points;
-                    showToast('+' + data.added + ' Points Added!');
-                } else {
-                    alert(data.error || "Failed to add point");
-                }
-            } catch(e) {
-                alert("Network error. Point not added.");
-            }
+            // Update Display
+            document.getElementById('points-display').innerText = basePoints + currentLocal;
+            showToast('+' + pointsToAdd + ' Points Added locally!');
 
-            
             setTimeout(() => {
                 btn.disabled = false;
                 btn.innerText = "Watch Ad (+1 pt)";
