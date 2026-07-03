@@ -1,0 +1,157 @@
+# DTech Rewards Platform - System Analysis and Documentation
+
+## 1. System Overview
+**What it is:**
+The DTech Rewards Platform is a digital ecosystem where users can earn points by engaging with advertisements (monetized links) and subsequently redeem those points for real-world rewards like Airtime, Vouchers, or Capitec bank transfers.
+
+**What it's for:**
+It serves as an ad-revenue sharing platform. The administrators generate revenue from ad impressions/clicks via third-party ad networks (like Monetag and direct link providers), and a portion of that value is distributed back to the users in the form of "points." (The internal economy is scaled such that 100 points = R1).
+
+**How it works (The User Journey):**
+1. **Registration & Login:** Users create an account and log in via the web portal or the dedicated Android app.
+2. **Earning Points:** Users navigate to the "Berserker" page and click on ads. The system tracks these ad interactions.
+3. **Synchronization:** As users watch ads, points are accumulated locally on their device. When they return to the dashboard, these pending points are securely synced to the backend database.
+4. **Withdrawal:** Once enough points are accumulated (e.g., 1000 points for Airtime), users can submit a withdrawal request.
+5. **Administration:** System admins use a hidden admin console to review withdrawal requests, process them, and manage (ban/delete/edit) users.
+
+---
+
+## 2. System Architecture
+The system follows a modern, serverless architecture split into three main components:
+
+### A. The Web Frontend (HTML/CSS/JS)
+A collection of vanilla HTML files hosted on a web server (e.g., `revenue.dtech-services.co.za`). It provides the User Interface (UI). It uses standard browser features like `localStorage` for session management (storing the username and a token) and `document.cookie` to communicate with the Android App layer.
+
+### B. The Native Android App (Kotlin/WebView)
+An Android application (`android_app/`) that acts as a dedicated, specialized browser for the Web Frontend. It wraps the website in a `WebView`.
+**Why have an app?**
+- It injects a secret security header (`User-Agent: DTechApp-Secret-9f8d7b6a`) into network requests, preventing users from spoofing point sync requests from standard desktop browsers.
+- It intercepts URL loading to detect when a user clicks an external ad link vs. an internal page.
+- It handles multiple windows (popups) natively, tracking when an ad popup is opened and closed, rewarding the user with a "pending point" via a Cookie (`pending_navigation_points`) upon return.
+
+### C. The Backend API (Cloudflare Worker & KV)
+A serverless edge function (`worker.js`) hosted on Cloudflare Workers. It acts as the entire backend logic and database layer.
+- **Compute:** It processes HTTP requests, validates tokens, hashes passwords, and handles the business logic.
+- **Storage:** It uses Cloudflare KV (Key-Value storage) as its database. Data is stored under keys (like the username), with values being JSON strings representing the user's data or system lists (like `SYSTEM:WITHDRAWALS`).
+
+---
+
+## 3. Detailed File Breakdown
+
+### Frontend Web Files
+
+#### `index.html` (Authentication Gateway)
+- **Purpose:** The landing page handling User Registration and Login.
+- **How it works:** Contains HTML forms for username and password. On submit, JavaScript intercepts the action, sends a `POST` request to the backend `/login` or `/register` endpoints. If login is successful, it receives a secure `token` from the server, saves it to the browser's `localStorage` (key: `dtech_user`), and redirects to `dashboard.html`.
+
+#### `dashboard.html` (Main Hub & Sync Engine)
+- **Purpose:** The central navigation hub for the user and the critical engine for syncing earned points.
+- **How it works:**
+  1. Checks `localStorage` to ensure the user is logged in.
+  2. **The Sync Mechanism:** It reads the `pending_navigation_points` cookie (set by the Android app when an ad is watched) and any `dtech_pending_points` from `localStorage`.
+  3. If pending points exist, it converts them into randomly generated values (e.g., 1 ad watch = a random number of points between 1 and 30).
+  4. It batches these points and sends a single `POST` request to `/sync-points`.
+  5. Upon success, it clears the cookie and local storage, ensuring points aren't duplicated.
+
+#### `berserker.html` (The Earning Arena)
+- **Purpose:** The specific page where users interact with ads to earn points.
+- **How it works:** Features a prominent "Watch Ad" button. When clicked, it opens a third-party ad URL (e.g., `https://otieu.com/...`) in a new tab/popup. The underlying logic relies on the Android App (or browser tracking) to monitor this exit and return, which triggers the point allocation process.
+
+#### `profile.html` (User Status)
+- **Purpose:** Displays the user's current point balance and their historical withdrawal requests.
+- **How it works:** Makes `GET` requests to `/user` to fetch the current live balance from the server, and `/withdrawals` to fetch the user's specific history. It renders these in a table format.
+
+#### `withdraw.html` (Redemption Interface)
+- **Purpose:** Allows users to convert points to real-world value.
+- **How it works:** Contains a form where users select a method (Airtime, Voucher, Capitec) and an amount based on predefined tiers. It dynamically updates the required input fields (e.g., asking for a phone number for Airtime, or an account number for Capitec). It sends a `POST` request to `/withdraw`, which deducts the points and logs the request for admins.
+
+#### `admin.html` (The Control Panel)
+- **Purpose:** A hidden, unlinked dashboard for system administrators.
+- **How it works:** Secured strictly by a frontend Javascript prompt asking for an Admin Secret (e.g., a password). This secret is passed in the headers (`X-Admin-Secret`) of every API call. It allows admins to view all users, edit balances, ban/delete users, and mark withdrawal requests as "paid".
+
+---
+
+### Android App Files
+
+#### `MainActivity.kt` (The Core Engine)
+- **Location:** `android_app/src/main/java/com/dtech/rewards/MainActivity.kt`
+- **Purpose:** The main activity that drives the entire mobile experience.
+- **How it works:**
+  - **Setup:** Initializes a `WebView`, enabling JavaScript, DOM storage, and multiple windows. Crucially, it appends `DTechApp-Secret-9f8d7b6a` to the `User-Agent`.
+  - **Navigation Tracking (`MyWebViewClient`):** Overrides `onPageStarted`. It checks if the URL being loaded is an internal domain (`revenue.dtech-services.co.za`) or an external ad. If the user leaves the internal `berserker.html` page for an external page, it flags an `isExternalSessionActive`.
+  - **Popup Handling (`MyWebChromeClient`):** Handles `onCreateWindow` (when an ad opens a popup) and `onCloseWindow`. When a popup is closed and the user returns, it calls `addPendingPoint()`.
+  - **Cookie Communication:** `addPendingPoint()` increments a counter in Android's `SharedPreferences` and immediately writes this value to the browser's `CookieManager` as `pending_navigation_points`. This is how the Android app tells the HTML `dashboard.html` that an ad was successfully watched.
+
+#### `AndroidManifest.xml`
+- **Location:** `android_app/src/main/AndroidManifest.xml`
+- **Purpose:** Defines app permissions (Internet access) and registers `MainActivity` and `MyFirebaseMessagingService` (for push notifications).
+
+---
+
+## 4. Comprehensive API Guide (worker.js)
+
+The backend is hosted on Cloudflare Workers (`https://crimson-art-f482.lefa4082.workers.dev`). All endpoints return standard HTTP status codes (200 OK, 400 Bad Request, etc.) and JSON payloads.
+
+### Global Security & CORS
+- `getCorsHeaders()`: Ensures only allowed domains (`*.dtech-services.co.za`, `*.preasx24.co.za`) can interact with the API. It handles preflight `OPTIONS` requests automatically.
+
+### User Endpoints
+
+#### 1. `POST /register`
+- **Purpose:** Creates a new user account.
+- **Request Payload (JSON):** `{"username": "johndoe", "password": "secretpassword", "email": "...", "whatsapp": "..."}`
+- **Logic:** Checks if the username exists in the KV store. If not, it hashes the password using SHA-256 (`hashPassword()`), creates a user object with 0 points and 'active' status, and saves it to the KV store. It also appends the username to the `SYSTEM:USER_LIST` array.
+- **Response:** `201 Created` on success, `409 Conflict` if user exists.
+
+#### 2. `POST /login`
+- **Purpose:** Authenticates a user and issues a session token.
+- **Request Payload (JSON):** `{"username": "johndoe", "password": "secretpassword"}`
+- **Logic:** Fetches the user from KV. Hashes the input password and compares it to the stored hash. (It includes a legacy migration check for unhashed passwords). If successful and the user is not banned, it generates a `crypto.randomUUID()` token, saves it to the user object in KV, and returns it.
+- **Response (JSON):** `{"message": "Login successful", "points": 100, "token": "uuid-string", "username": "johndoe"}`
+
+#### 3. `GET /user?username={username}`
+- **Purpose:** Retrieves the current point balance for a user.
+- **Query Params:** `username`
+- **Logic:** Fetches the user from KV, ensures they aren't banned, and returns their points.
+- **Response (JSON):** `{"username": "johndoe", "points": 1500}`
+
+#### 4. `POST /sync-points`
+- **Purpose:** The most critical and secure endpoint. Adds points to a user's balance.
+- **Security:** Requires the `User-Agent` header to contain `DTechApp-Secret-9f8d7b6a`. This enforces that points can only be synced from the official Android App, preventing users from running scripts on their desktop browsers to artificially inflate points. Also requires the valid session `token`.
+- **Request Payload (JSON):** `{"username": "johndoe", "token": "uuid-string", "points": 45}`
+- **Logic:** Validates the user exists, isn't banned, and the token matches. It then adds the requested points to the user's total and saves back to KV.
+- **Response (JSON):** `{"message": "Points synced successfully", "points": 1545, "added": 45}`
+
+#### 5. `POST /withdraw`
+- **Purpose:** Submits a request to redeem points for a reward.
+- **Request Payload (JSON):** `{"username": "johndoe", "token": "uuid", "points": 1000, "amount": 10, "method": "Airtime", "details": {"network": "Vodacom", "phone": "0812345678"}}`
+- **Logic:** Validates all fields are present and numeric fields are valid numbers. Checks if the user has enough points. If valid, it deducts the points from the user's balance, generates a unique withdrawal ID, and saves the request to the `SYSTEM:WITHDRAWALS` array in KV with a status of 'pending'.
+- **Response:** `200 OK` on success, `400 Bad Request` if insufficient points.
+
+#### 6. `GET /withdrawals?username={username}`
+- **Purpose:** Gets a specific user's withdrawal history.
+- **Logic:** Fetches the global `SYSTEM:WITHDRAWALS` array and filters it by the provided username.
+
+---
+
+### Admin Endpoints
+
+All admin endpoints require the custom header `X-Admin-Secret: {secret}`. The backend compares this header against its environment variable `env.ADMIN_SECRET`.
+
+#### 7. `GET /admin/users`
+- **Purpose:** Lists all users in the system.
+- **Logic:** Iterates through `SYSTEM:USER_LIST`, fetches each user's KV record, and returns a summarized array (username, points, ban status).
+
+#### 8. `POST /admin/action`
+- **Purpose:** Perform actions on users (Ban, Unban, Edit Balance, Delete).
+- **Request Payload (JSON):** `{"username": "johndoe", "action": "ban|unban|edit_balance|delete", "value": "optional-value"}`
+- **Logic:** Fetches the user, applies the requested modification, and saves it. If 'delete', removes the user from KV and the `SYSTEM:USER_LIST`.
+
+#### 9. `GET /admin/withdrawals`
+- **Purpose:** Lists all withdrawal requests system-wide.
+- **Logic:** Fetches `SYSTEM:WITHDRAWALS` and sorts them by timestamp (newest first).
+
+#### 10. `POST /admin/withdrawal-action`
+- **Purpose:** Updates the status of a withdrawal request.
+- **Request Payload (JSON):** `{"id": "withdrawal-uuid", "action": "paid"}`
+- **Logic:** Finds the specific withdrawal in `SYSTEM:WITHDRAWALS` by ID, updates its status to 'paid', and saves the array back to KV.
