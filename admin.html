@@ -134,6 +134,14 @@
         </div>
 
         <div class="card">
+            <h3>Admin Authentication</h3>
+            <div style="display: flex; gap: 10px; align-items: center;">
+                <input type="password" id="admin-secret-input" placeholder="Enter Admin Secret" style="padding: 8px; border: 1px solid var(--border); border-radius: var(--radius); flex-grow: 1; max-width: 300px;">
+                <button onclick="saveAdminSecret()" class="action-btn btn-paid" style="margin: 0; padding: 8px 16px;">Save & Reload</button>
+            </div>
+        </div>
+
+        <div class="card">
             <h3>Withdrawal Requests</h3>
             <table>
                 <thead>
@@ -174,9 +182,36 @@
     <script>
         const API_URL = "https://crimson-art-f482.lefa4082.workers.dev";
 
+        function getAdminSecret() {
+            return localStorage.getItem('dtech_admin_secret') || '';
+        }
+
+        function saveAdminSecret() {
+            const secret = document.getElementById('admin-secret-input').value;
+            localStorage.setItem('dtech_admin_secret', secret);
+            loadUsers();
+            loadWithdrawals();
+        }
+
+        // Initialize secret input on load
+        window.addEventListener('DOMContentLoaded', () => {
+            const secret = getAdminSecret();
+            if (secret) {
+                document.getElementById('admin-secret-input').value = secret;
+            }
+        });
+
         async function loadUsers() {
             try {
-                const res = await fetch(`${API_URL}/admin/users`);
+                const res = await fetch(`${API_URL}/admin/users`, {
+                    headers: { 'X-Admin-Secret': getAdminSecret() }
+                });
+
+                if (res.status === 403) {
+                    document.getElementById('users-list').innerHTML = '<tr><td colspan="4" style="color:red; font-weight:bold;">Unauthorized: Invalid Admin Secret.</td></tr>';
+                    return;
+                }
+
                 const users = await res.json();
 
                 const tbody = document.getElementById('users-list');
@@ -231,9 +266,17 @@
             try {
                 const res = await fetch(`${API_URL}/admin/action`, {
                     method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Admin-Secret': getAdminSecret()
+                    },
                     body: JSON.stringify({ username, action, value })
                 });
+
+                if (res.status === 403) {
+                    alert("Unauthorized: Invalid Admin Secret.");
+                    return;
+                }
 
                 if (res.ok) {
                     loadUsers();
@@ -248,7 +291,15 @@
 
         async function loadWithdrawals() {
             try {
-                const res = await fetch(`${API_URL}/admin/withdrawals`);
+                const res = await fetch(`${API_URL}/admin/withdrawals`, {
+                    headers: { 'X-Admin-Secret': getAdminSecret() }
+                });
+
+                if (res.status === 403) {
+                    document.getElementById('withdrawals-list').innerHTML = '<tr><td colspan="7" style="color:red; font-weight:bold;">Unauthorized: Invalid Admin Secret.</td></tr>';
+                    return;
+                }
+
                 const withdrawals = await res.json();
 
                 const tbody = document.getElementById('withdrawals-list');
@@ -314,9 +365,17 @@
             try {
                 const res = await fetch(`${API_URL}/admin/withdrawal-action`, {
                     method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Admin-Secret': getAdminSecret()
+                    },
                     body: JSON.stringify({ id, action: 'paid' })
                 });
+
+                if (res.status === 403) {
+                    alert("Unauthorized: Invalid Admin Secret.");
+                    return;
+                }
 
                 if (res.ok) {
                     loadWithdrawals();
