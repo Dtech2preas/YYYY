@@ -1,0 +1,7 @@
+name = "crimson-art-f482"
+main = "worker.js"
+compatibility_date = "2024-01-01"
+
+[[kv_namespaces]]
+binding = "USERS"
+id = "9f6b80d20fc9448b86f14fa15bce6fb4"
