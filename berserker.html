@@ -96,6 +96,16 @@
             transform: none;
         }
 
+        .points-added-indicator {
+            color: var(--success);
+            font-weight: 700;
+            font-size: 0.95rem;
+            margin-top: 15px;
+            opacity: 0;
+            transition: opacity 0.3s;
+            height: 20px;
+        }
+
         .back-link {
             color: #94a3b8;
             text-decoration: none;
@@ -137,7 +147,8 @@
             <h2>Watch Ad</h2>
             <p>Click below to open an ad. You will instantly receive between 1 and 30 points.</p>
 
-            <button id="watch-btn" class="watch-btn" onclick="watchAd()">Watch Ad (+1 pt)</button>
+            <button id="watch-btn" class="watch-btn" onclick="watchAd()">Watch Ad</button>
+            <div id="points-added-indicator" class="points-added-indicator"></div>
         </div>
 
         <div style="text-align: center;">
@@ -157,6 +168,48 @@
         }
 
         let basePoints = 0;
+
+        function getPendingAdWatches() {
+            const match = document.cookie.match(/(?:^|; )pending_navigation_points=([^;]*)/);
+            return match ? parseInt(match[1]) || 0 : 0;
+        }
+
+        function checkCookieForPoints() {
+            const pendingAdWatches = getPendingAdWatches();
+            if (pendingAdWatches > 0) {
+                let accumulatedLocalPoints = parseInt(localStorage.getItem('dtech_pending_points')) || 0;
+                let pointsAddedThisTime = 0;
+
+                // Generate random points for each ad watched
+                for (let i = 0; i < pendingAdWatches; i++) {
+                    const pts = Math.floor(Math.random() * 30) + 1;
+                    accumulatedLocalPoints += pts;
+                    pointsAddedThisTime += pts;
+                }
+
+                // Save to local storage
+                localStorage.setItem('dtech_pending_points', accumulatedLocalPoints);
+
+                // Reset cookie so we don't process them again
+                document.cookie = `pending_navigation_points=0; path=/; max-age=31536000`;
+
+                // Update Display
+                document.getElementById('points-display').innerText = basePoints + accumulatedLocalPoints;
+
+                // Show indicator
+                const indicator = document.getElementById('points-added-indicator');
+                indicator.innerText = `+${pointsAddedThisTime} Points Added!`;
+                indicator.style.opacity = 1;
+
+                // Also show toast just in case
+                showToast(`+${pointsAddedThisTime} Points Added!`);
+
+                // Re-enable button if it was disabled
+                const btn = document.getElementById('watch-btn');
+                btn.disabled = false;
+                btn.innerText = "Watch Ad";
+            }
+        }
 
         async function updatePointsDisplay() {
             try {
@@ -184,24 +237,34 @@
             btn.disabled = true;
             btn.innerText = "Processing...";
 
+            // Hide indicator when starting a new ad
+            document.getElementById('points-added-indicator').style.opacity = 0;
+
             // Open the Ad
             window.open(AD_URL, '_blank');
 
-            // Add the point locally
-            const pointsToAdd = Math.floor(Math.random() * 30) + 1;
-            let currentLocal = parseInt(localStorage.getItem('dtech_pending_points')) || 0;
-            currentLocal += pointsToAdd;
-            localStorage.setItem('dtech_pending_points', currentLocal);
+            // We no longer add points manually here.
+            // We rely on the Android tracking layer setting the cookie
+            // and our interval picking it up.
 
-            // Update Display
-            document.getElementById('points-display').innerText = basePoints + currentLocal;
-            showToast('+' + pointsToAdd + ' Points Added locally!');
-
+            // Fallback in case cookie is never set (e.g., ad blocker blocked window open)
             setTimeout(() => {
-                btn.disabled = false;
-                btn.innerText = "Watch Ad (+1 pt)";
-            }, 3000);
+                if (btn.disabled) {
+                    btn.disabled = false;
+                    btn.innerText = "Watch Ad";
+                }
+            }, 5000);
         }
+
+        // Check for points every second
+        setInterval(checkCookieForPoints, 1000);
+
+        // Also check when tab becomes visible again
+        document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'visible') {
+                checkCookieForPoints();
+            }
+        });
 
         // Initialize
         updatePointsDisplay();
