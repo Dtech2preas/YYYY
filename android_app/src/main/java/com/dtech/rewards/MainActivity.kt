@@ -205,8 +205,6 @@ class MainActivity : AppCompatActivity() {
             super.onCloseWindow(window)
             if (window != null) {
                 closePopup(window)
-                // When popup is closed, user returns to main webview, session is over.
-                isExternalSessionActive = false
             }
         }
     }
@@ -215,6 +213,8 @@ class MainActivity : AppCompatActivity() {
         webViewContainer.removeView(popup)
         popups.remove(popup)
         popup.destroy()
+        // When popup is closed, user returns to main webview, session is over.
+        isExternalSessionActive = false
     }
 
     override fun onBackPressed() {
