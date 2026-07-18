@@ -31,7 +31,7 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
         val channelId = "dtech_default_channel"
         val notificationBuilder = NotificationCompat.Builder(this, channelId)
             .setSmallIcon(R.drawable.ic_launcher_foreground)
-            .setContentTitle(title ?: "D-TECH")
+            .setContentTitle(title ?: "D-TECH rewards")
             .setContentText(messageBody)
             .setAutoCancel(true)
             .setContentIntent(pendingIntent)

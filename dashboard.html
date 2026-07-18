@@ -3,6 +3,7 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="icon" type="image/png" href="logo.png">
     <title>DTech - Dashboard</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
     <style>
@@ -61,10 +62,18 @@
             margin-bottom: 10px;
         }
 
+        @keyframes pulse-glow {
+            0% { text-shadow: 0 0 5px rgba(212, 175, 55, 0.2); transform: scale(1); }
+            50% { text-shadow: 0 0 20px rgba(212, 175, 55, 0.6); transform: scale(1.02); }
+            100% { text-shadow: 0 0 5px rgba(212, 175, 55, 0.2); transform: scale(1); }
+        }
+
         .balance-amount {
             font-size: 3.5rem;
             font-weight: 800;
             color: var(--accent);
+            animation: pulse-glow 2s infinite ease-in-out;
+            display: inline-block;
         }
 
         .grid {
