@@ -139,6 +139,11 @@
             <a class="logout" onclick="logout()">Logout</a>
         </div>
 
+        <div id="failed-ad-note" style="display: none; background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.3); color: #fca5a5; padding: 15px; border-radius: 8px; margin-bottom: 20px; font-size: 0.9rem; text-align: left; position: relative;">
+            <button onclick="document.getElementById('failed-ad-note').style.display='none'" style="position: absolute; right: 10px; top: 10px; background: none; border: none; color: #fca5a5; font-size: 1.2rem; cursor: pointer; font-weight: bold;">&times;</button>
+            <strong>Action Required:</strong> You need to wait for the ad to fully load and scroll/click. Please spend a few seconds on the ad before returning.
+        </div>
+
         <div id="network-warning" style="display: none; background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.3); color: #fca5a5; padding: 10px 15px; border-radius: 8px; margin-bottom: 20px; font-size: 0.85rem; text-align: center;">
             Network warning here
         </div>
@@ -179,25 +184,50 @@
             return match ? parseInt(match[1]) || 0 : 0;
         }
 
+        function getFailedAdCookie() {
+            const match = document.cookie.match(/(?:^|; )ad_watch_failed=([^;]*)/);
+            return match ? parseInt(match[1]) || 0 : 0;
+        }
+
+        async function measureNetworkSpeed() {
+            const startTime = performance.now();
+            try {
+                const response = await fetch(`index.html?cb=${Math.random()}`);
+                await response.text();
+                const duration = performance.now() - startTime;
+
+                if (duration < 800) return 'good';
+                if (duration < 2500) return 'okay';
+                return 'bad';
+            } catch (e) {
+                return 'bad';
+            }
+        }
+
         async function syncPointsLocallyAndServer() {
+            const failedAd = getFailedAdCookie();
+            if (failedAd > 0) {
+                document.cookie = `ad_watch_failed=0; path=/; max-age=31536000`;
+                const note = document.getElementById('failed-ad-note');
+                if(note) note.style.display = 'block';
+            }
+
             // 1. Check for ad watches from Android external navigation
             const pendingAdWatches = getPendingAdWatches();
             let accumulatedLocalPoints = parseInt(localStorage.getItem('dtech_pending_points')) || 0;
 
             if (pendingAdWatches > 0) {
                 // Determine connection speed modifier
+                const networkStatus = await measureNetworkSpeed();
                 let multiplier = 1.0;
                 let connectionType = "good";
 
-                if (navigator.connection && navigator.connection.effectiveType) {
-                    const type = navigator.connection.effectiveType;
-                    if (type === '3g') {
-                        multiplier = 0.7;
-                        connectionType = "okay";
-                    } else if (type === '2g' || type === 'slow-2g') {
-                        multiplier = 0.5;
-                        connectionType = "bad";
-                    }
+                if (networkStatus === 'okay') {
+                    multiplier = 0.7;
+                    connectionType = "okay";
+                } else if (networkStatus === 'bad') {
+                    multiplier = 0.5;
+                    connectionType = "bad";
                 }
 
                 // Show warning if connection is not good
@@ -205,10 +235,10 @@
                 if (networkWarningEl) {
                     if (connectionType === 'okay') {
                         networkWarningEl.style.display = 'block';
-                        networkWarningEl.innerText = "Network connection is Okay (3G). You are receiving 30% fewer points. Get a better location to get more points!";
+                        networkWarningEl.innerText = "Network connection is Okay. You are receiving 30% fewer points. Get a better location to get more points!";
                     } else if (connectionType === 'bad') {
                         networkWarningEl.style.display = 'block';
-                        networkWarningEl.innerText = "Network connection is Bad (2G). You are receiving 50% fewer points. Get a better location to get more points!";
+                        networkWarningEl.innerText = "Network connection is Bad. You are receiving 50% fewer points. Get a better location to get more points!";
                     } else {
                         networkWarningEl.style.display = 'none';
                     }

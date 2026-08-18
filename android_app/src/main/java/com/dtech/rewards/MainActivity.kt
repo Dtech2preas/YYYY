@@ -23,6 +23,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var prefs: SharedPreferences
     private var isExternalSessionActive = false
     private var lastInternalPageWasBerserker = false
+    private var externalSessionStartTime: Long = 0
 
     private val PREFS_NAME = "DTechPrefs"
     private val KEY_PENDING_POINTS = "pendingNavigationPoints"
@@ -53,6 +54,12 @@ class MainActivity : AppCompatActivity() {
         val currentPoints = prefs.getInt(KEY_PENDING_POINTS, 0)
         val cookieManager = CookieManager.getInstance()
         cookieManager.setCookie("https://revenue.dtech-services.co.za", "pending_navigation_points=$currentPoints; path=/; max-age=31536000")
+        cookieManager.flush()
+    }
+
+    private fun setFailedAdCookie() {
+        val cookieManager = CookieManager.getInstance()
+        cookieManager.setCookie("https://revenue.dtech-services.co.za", "ad_watch_failed=1; path=/; max-age=31536000")
         cookieManager.flush()
     }
 
@@ -120,12 +127,20 @@ class MainActivity : AppCompatActivity() {
                 syncPointsFromCookie()
 
                 if (isInternalDomain(it)) {
+                    if (isExternalSessionActive) {
+                        val duration = System.currentTimeMillis() - externalSessionStartTime
+                        if (duration >= 6000) {
+                            addPendingPoint()
+                        } else {
+                            setFailedAdCookie()
+                        }
+                    }
                     isExternalSessionActive = false
                     lastInternalPageWasBerserker = it.contains("berserker.html")
                 } else {
                     if (lastInternalPageWasBerserker && !isExternalSessionActive) {
                         isExternalSessionActive = true
-                        addPendingPoint()
+                        externalSessionStartTime = System.currentTimeMillis()
                     }
                 }
             }
@@ -138,6 +153,11 @@ class MainActivity : AppCompatActivity() {
             if (url.startsWith("http://") || url.startsWith("https://")) {
                 // Return false to let the WebView handle the URL normally
                 return false
+            }
+
+            if (lastInternalPageWasBerserker && !isExternalSessionActive) {
+                isExternalSessionActive = true
+                externalSessionStartTime = System.currentTimeMillis()
             }
 
             try {
@@ -185,6 +205,11 @@ class MainActivity : AppCompatActivity() {
             isUserGesture: Boolean,
             resultMsg: Message?
         ): Boolean {
+            if (lastInternalPageWasBerserker && !isExternalSessionActive) {
+                isExternalSessionActive = true
+                externalSessionStartTime = System.currentTimeMillis()
+            }
+
             val newWebView = WebView(this@MainActivity)
             setupWebView(newWebView)
             newWebView.layoutParams = FrameLayout.LayoutParams(
@@ -214,7 +239,30 @@ class MainActivity : AppCompatActivity() {
         popups.remove(popup)
         popup.destroy()
         // When popup is closed, user returns to main webview, session is over.
-        isExternalSessionActive = false
+        if (isExternalSessionActive) {
+            val duration = System.currentTimeMillis() - externalSessionStartTime
+            if (duration >= 6000) {
+                addPendingPoint()
+            } else {
+                setFailedAdCookie()
+            }
+            isExternalSessionActive = false
+        }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        val currentUrl = mainWebView.url
+        val isPopupOpen = popups.isNotEmpty()
+        if (isExternalSessionActive && !isPopupOpen && (currentUrl == null || isInternalDomain(currentUrl))) {
+            val duration = System.currentTimeMillis() - externalSessionStartTime
+            if (duration >= 6000) {
+                addPendingPoint()
+            } else {
+                setFailedAdCookie()
+            }
+            isExternalSessionActive = false
+        }
     }
 
     override fun onBackPressed() {
