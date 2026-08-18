@@ -155,7 +155,7 @@ class MainActivity : AppCompatActivity() {
                 return false
             }
 
-            if (lastInternalPageWasBerserker && !isExternalSessionActive) {
+            if (!isInternalDomain(url) && lastInternalPageWasBerserker && !isExternalSessionActive) {
                 isExternalSessionActive = true
                 externalSessionStartTime = System.currentTimeMillis()
             }
